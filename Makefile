@@ -3,7 +3,7 @@ CC_FLAGS := -Wall
 LANG_STD = -std=c99
 # INCLUDE_PATH := -I"./libs"
 SRCS := src/*.c
-LINKER_FLAGS := -lSDL2
+LINKER_FLAGS := -lSDL2 -lm
 EXECUTABLE = renderer
 # OBJS := $(patsubst %.c, %.o, $(SRCS))
 
