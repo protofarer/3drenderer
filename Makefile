@@ -13,6 +13,9 @@ build:
 run: $(EXECUTABLE)
 	./$(EXECUTABLE)
 
+kill:
+	pkill --signal=9 $(EXECUTABLE)
+
 .PHONY: clean
 clean:
 	rm ./renderer

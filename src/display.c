@@ -15,8 +15,10 @@ bool initialize_window(void) {
 
     SDL_DisplayMode display_mode;
     SDL_GetCurrentDisplayMode(0, &display_mode);
-    window_width = display_mode.w;
-    window_height = display_mode.h;
+    // window_width = display_mode.w;
+    // window_height = display_mode.h;
+    window_width = 1600;
+    window_height = 1200;
 
     SDL_Window* window = SDL_CreateWindow(
         NULL,  // NULL for no window border (no title)
@@ -24,7 +26,7 @@ bool initialize_window(void) {
         SDL_WINDOWPOS_CENTERED,
         window_width,
         window_height,
-        SDL_WINDOW_BORDERLESS);
+        SDL_WINDOW_SHOWN);
     if (!window) {
         fprintf(stderr, "Error creating SDL window.\n");
         return false;
@@ -35,7 +37,7 @@ bool initialize_window(void) {
         fprintf(stderr, "Error creating SDL renderer.\n");
         return false;
     }
-    SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);  // without this, taskbar shows (fake fullscreen)
+    // SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);  // without this, taskbar shows (fake fullscreen)
 
     return true;
 }
@@ -144,7 +146,6 @@ void draw_triangle(int x0, int y0, int x1, int y1, int x2, int y2, uint32_t colo
 }
 
 void destroy_window(void) {
-    free(color_buffer);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();  // destroy init
