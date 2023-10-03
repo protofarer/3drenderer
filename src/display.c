@@ -66,6 +66,33 @@ void draw_grid(uint32_t interval, uint32_t color) {
     }
 }
 
+// TODO this is broken, fix ratio calculation
+void draw_gradient_to_black_background(uint32_t color) {
+    uint8_t original_red = (color & 0x00FF0000) >> 16;
+    uint8_t original_green = (color & 0x0000FF00) >> 8;
+    uint8_t original_blue = (color & 0x000000FF);
+    // get total number of rows
+    // calculate a smooth delta for each input color R, G, B to 00 for each
+    // that is: over window_height, decrease RR, GG, BB to zero over appropriate
+    // interval, probably using a conditional modulus test where the modulus
+    // factor is the total number of smallest decrements available to reduce
+    // exactly to black at the bottom of screen
+    
+    for (int i = 0; i <= window_height; i++) {
+        float ratio = 1.0f - ((float)(i) / (float)window_height);
+
+        uint8_t red = (uint8_t)(original_red * ratio);
+        uint8_t green = (uint8_t)(original_green * ratio);
+        uint8_t blue = (uint8_t)(original_blue * ratio);
+
+        uint32_t gradient_color = 0xFF000000 | (red << 16) | (green << 8) | blue;
+
+        for (int j = 0; j <= window_width; j++) {
+            color_buffer[window_width * i + j] = gradient_color;
+        }
+    }
+}
+
 void draw_pixel(int x, int y, uint32_t color) {
     if (x >= 0 && x < window_width && y >= 0 && y < window_height)
         color_buffer[window_width * y + x] = color;
@@ -88,6 +115,32 @@ void fill_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t
             draw_pixel(j, i, color);
         }
     }
+}
+
+// naive DDA line algorithm
+void draw_line(int x0, int y0, int x1, int y1, uint32_t color) {
+    int x_len = (x1 - x0);
+    int y_len = (y1 - y0);
+
+    int side_length = abs(x_len) >= abs(y_len) ? abs(x_len) : abs(y_len);
+
+    float dx = x_len / (float)side_length;
+    float dy = y_len / (float)side_length;
+
+    float x = x0;
+    float y = y0;
+    for (int i = 0; i <= side_length; i++) {
+        draw_pixel(round(x), round(y), color);
+        x += dx;
+        y += dy;
+    }
+}
+
+void draw_triangle(int x0, int y0, int x1, int y1, int x2, int y2, uint32_t color) {
+    draw_line(x0, y0, x1, y1, color);
+    draw_line(x1, y1, x2, y2, color);
+    draw_line(x2, y2, x0, y0, color);
+
 }
 
 void destroy_window(void) {
