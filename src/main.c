@@ -51,7 +51,12 @@ void setup(void) {
 		window_height
 	);
 
-	load_cube_mesh_data();
+	// load_cube_mesh_data(); // defined locally
+	load_obj_file_data("./assets/cube.obj");
+	vec3_t a = { 2.5, 6.4, 3.0 };
+	vec3_t b = { -2.2, 1.4, -1.0 };
+	float a_len = vec3_length(a);
+	float b_len = vec3_length(b);
 }
 
 void process_input(void) {
@@ -90,12 +95,13 @@ void update(void) {
 	// Init array of triangles to render
 	triangles_to_render = NULL;
 
-	mesh.rotation.y += .05;
-	mesh.rotation.z += .05;
-	mesh.rotation.x += .05;
+	mesh.rotation.y += .01;
+	mesh.rotation.z += .01;
+	mesh.rotation.x += .01;
 
 	// loop triangle faces of mesh
 	int num_faces = array_length(mesh.faces);
+	printf("num faces: %d", num_faces);
 	for (int i = 0; i < num_faces; i++) {
 		face_t mesh_face = mesh.faces[i];
 
@@ -147,9 +153,11 @@ void render(void) {
 		int x3 = triangle.points[2].x;
 		int y3 = triangle.points[2].y;
 
-		draw_rect(x1, y1, 3, 3, 0xFFFFFF00);
-		draw_rect(x2, y2, 3, 3, 0xFFFFFF00);
-		draw_rect(x3, y3, 3, 3, 0xFFFFFF00);
+		// printf("x:%d y:%d", x1, y1);
+		// printf("before draw rect");
+		// fill_rect(x1, y1, 3, 3, RED);
+		// fill_rect(x2, y2, 3, 3, RED);
+		// fill_rect(x3, y3, 3, 3, RED);
 
 		draw_triangle(x1,y1,x2,y2,x3,y3, RED_ORANGE);
 	}
@@ -180,6 +188,7 @@ int main(void) {
 	}
 
 	destroy_window();
+
 	free_resources();
 
 	return 0;

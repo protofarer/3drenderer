@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "mesh.h"
 #include "array.h"
 
@@ -50,3 +52,106 @@ void load_cube_mesh_data(void) {
         array_push(mesh.faces, cube_face);
     }
 }
+
+// read vertex lines "v", read face lines "f"
+// read in point values into a vertex "index", push into dynamic array `vertices`
+// read in first slash values into a face row, push into dynamic array `faces`
+void load_obj_file_data(char* filepath) {
+    // read file from disk
+    FILE* file = fopen(filepath, "r");
+    if (file == NULL) return;
+
+    // initial allocation
+    size_t buffer_size = 64;    // starting value based on cube file, can increase buffer as longer lines are encountered
+    char* line = malloc(buffer_size);
+    if (line == NULL) {     // catch malloc fail, unlikely
+        fclose(file);
+        printf("FAIL initial malloc");
+        return;
+    }
+
+    // open text file
+        int line_n = 0;
+    while (!feof(file)) {
+        if (fgets(line, buffer_size, file)) {
+            // read line by line and parse
+
+            // double buffer if buffer limit hit
+            if (line[buffer_size - 2] != '\0' && line[buffer_size - 2] != '\n') {
+                buffer_size *= 2;
+                char* new_line = realloc(line, buffer_size);
+                if (new_line == NULL) {
+                    free(line);
+                    fclose(file);
+                    printf("FAIL realloc increase buffer size");
+                    return;
+                }
+                line = new_line;
+                printf("Doubled line buffer to: %zu\n", buffer_size); // z = size_t, u = unsigned
+            }
+
+            // PARSE
+
+            // get first token: returns ptr to 1st token string in line
+            char* token = strtok(line, " ");
+            if (token == NULL) continue;
+
+            printf("----- line[%d] 1st token: \"%s\" -----\n", line_n, token);
+
+            // parse vertex line
+            if (strcmp(token,"v") == 0) {
+                float vertices[3] = { 0.0f }; // stack allocate and initialize
+                int i = 0;
+                while (token != NULL) {
+                    token = strtok(NULL, " "); // read until space
+                    if (token == NULL) break;
+                    printf("%s\n", token);
+
+                    float vertex = atof(token);
+                    vertices[i] = vertex;
+                    i++;
+                }
+                vec3_t vec3_vertices = {
+                    .x = vertices[0],
+                    .y = vertices[1],
+                    .z = vertices[2],
+                };
+                array_push(mesh.vertices, vec3_vertices);
+                continue;
+            }
+
+            // parse face line
+            if (strcmp(token, "f") == 0) {
+                int face[3] = { 0 };
+                int vt[3] = { 0 };
+                int vn[3] = { 0 };
+                int i = 0;
+                while (token != NULL) {
+                    token = strtok(NULL, " "); // read until space
+                    if (token == NULL) break;
+
+                    // strtok is not re-entrant, do manual parsing via sscanf, it is also extensible to other values on the "f" line
+                    sscanf(token, "%d/%d/%d", &face[i], &vt[i], &vn[i]);
+                    printf("face[%d]: %d\n", i, face[i]);
+                    i++;
+                }
+                face_t mesh_face = {
+                    .a = face[0],
+                    .b = face[1],
+                    .c = face[2]
+                };
+                array_push(mesh.faces, mesh_face);
+                continue;
+            }
+        }
+
+        line_n++;
+    }
+
+    // push appropriate line data to appropriate array (vertices or faces)
+
+    // free and close
+    free(line);
+    fclose(file);
+}
+

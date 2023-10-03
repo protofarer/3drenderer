@@ -20,3 +20,12 @@ typedef struct {
 extern mesh_t mesh;   // the purpose of extern, which is to say "this is declared here, but defined elsewhere."
 
 void load_cube_mesh_data(void);
+
+void load_obj_file_data(char* filepath);
+
+
+// read vertex lines "v", read in point values into a vertex "index"
+// push into dynamic array `vertices`
+
+// read face lines "f", read in first slash values into a face row
+// push into dynamic array `faces`
