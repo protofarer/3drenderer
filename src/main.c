@@ -28,7 +28,7 @@ triangle_t* triangles_to_render = NULL;
 ////////////////////////////////////////////////////////////////////////////////
 // Global var for exec status and game loop
 ////////////////////////////////////////////////////////////////////////////////
-vec3_t camera_position = { .x = 0, .y = 0, .z = -5 };
+vec3_t camera_position = { .x = 0, .y = 0, .z = 0 };
 
 float fov_factor = 640;
 
@@ -38,7 +38,7 @@ int previous_frame_time = 0;
 ////////////////////////////////////////////////////////////////////////////////
 // Initialize vars and objects
 ////////////////////////////////////////////////////////////////////////////////
-void setup(void) {
+void setup(char* object_path) {
 	// Allocate required memory in bytes to hold color buffer
 	color_buffer = (uint32_t*)malloc(sizeof(uint32_t) * window_width * window_height);
 
@@ -52,11 +52,7 @@ void setup(void) {
 	);
 
 	// load_cube_mesh_data(); // defined locally
-	load_obj_file_data("./assets/cube.obj");
-	vec3_t a = { 2.5, 6.4, 3.0 };
-	vec3_t b = { -2.2, 1.4, -1.0 };
-	float a_len = vec3_length(a);
-	float b_len = vec3_length(b);
+	load_obj_file_data(object_path);
 }
 
 void process_input(void) {
@@ -96,12 +92,11 @@ void update(void) {
 	triangles_to_render = NULL;
 
 	mesh.rotation.y += .01;
-	mesh.rotation.z += .01;
+	mesh.rotation.z += .0;
 	mesh.rotation.x += .01;
 
 	// loop triangle faces of mesh
 	int num_faces = array_length(mesh.faces);
-	printf("num faces: %d", num_faces);
 	for (int i = 0; i < num_faces; i++) {
 		face_t mesh_face = mesh.faces[i];
 
@@ -110,7 +105,7 @@ void update(void) {
 		face_vertices[1] = mesh.vertices[mesh_face.b - 1];
 		face_vertices[2] = mesh.vertices[mesh_face.c - 1];
 
-		triangle_t projected_triangle;
+		vec3_t transformed_vertices[3];
 
 		// Loop all 3 vertices of current face and apply transformations
 		for (int j = 0; j < 3; j++) {
@@ -120,10 +115,42 @@ void update(void) {
 			transformed_vertex = vec3_rotate_z(transformed_vertex, mesh.rotation.z);
 
 			// Translate vertex away from camera
-			transformed_vertex.z -= camera_position.z;
+			transformed_vertex.z += 5;
 
+			// Store for use outside of loop
+			transformed_vertices[j] = transformed_vertex;
+		}
+
+		// Cull back-faces
+		vec3_t vector_a = transformed_vertices[0];
+		vec3_t vector_b = transformed_vertices[1];
+		vec3_t vector_c = transformed_vertices[2];
+
+		vec3_t vector_ab = vec3_sub(vector_b, vector_a);
+		vec3_t vector_ac = vec3_sub(vector_c, vector_a);
+		vec3_normalize(&vector_ab);
+		vec3_normalize(&vector_ac);
+
+		// Left-handed coordinate system: take clockwise cross
+		// Compute face normal: cross b-a x c-a
+		vec3_t normal = vec3_cross(vector_ab, vector_ac);
+		vec3_normalize(&normal);
+
+		// Find vector from a point on triangle to camera position
+		vec3_t camera_ray = vec3_sub(camera_position, normal);
+
+		// Calculate how aligned camera ray is with face normal: 
+		// 	dot product camera ray with face normal
+		float dot_normal_camera = vec3_dot(camera_ray, vector_a);
+
+		// Bypass faces that are away from camera
+		if (dot_normal_camera < 0) continue;
+
+		// Project each point
+		triangle_t projected_triangle;
+		for (int j = 0; j < 3; j++) {
 			// Project current vertex
-			vec2_t projected_point = project(transformed_vertex);
+			vec2_t projected_point = project(transformed_vertices[j]);
 
 			// Scale and translate projected points to middle of screen (instead of doing it in update)
 			projected_point.x += (window_width / 2);
@@ -177,9 +204,15 @@ void free_resources() {
 	array_free(mesh.vertices);
 }
 
-int main(void) {
+int main(int argc, char* argv[]) {
+	char* object_path;
+	if (argc > 1) {
+		object_path = argv[1];
+	} else {
+		object_path = "./assets/cube.obj";
+	}
 	is_running = initialize_window();
-	setup();
+	setup(object_path);
 
 	while (is_running) {
 		process_input();

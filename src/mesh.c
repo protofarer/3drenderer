@@ -87,7 +87,6 @@ void load_obj_file_data(char* filepath) {
                     return;
                 }
                 line = new_line;
-                printf("Doubled line buffer to: %zu\n", buffer_size); // z = size_t, u = unsigned
             }
 
             // PARSE
@@ -96,7 +95,7 @@ void load_obj_file_data(char* filepath) {
             char* token = strtok(line, " ");
             if (token == NULL) continue;
 
-            printf("----- line[%d] 1st token: \"%s\" -----\n", line_n, token);
+            // printf("----- line[%d] 1st token: \"%s\" -----\n", line_n, token);
 
             // parse vertex line
             if (strcmp(token,"v") == 0) {
@@ -105,7 +104,7 @@ void load_obj_file_data(char* filepath) {
                 while (token != NULL) {
                     token = strtok(NULL, " "); // read until space
                     if (token == NULL) break;
-                    printf("%s\n", token);
+                    // printf("%s\n", token);
 
                     float vertex = atof(token);
                     vertices[i] = vertex;
@@ -132,7 +131,7 @@ void load_obj_file_data(char* filepath) {
 
                     // strtok is not re-entrant, do manual parsing via sscanf, it is also extensible to other values on the "f" line
                     sscanf(token, "%d/%d/%d", &face[i], &vt[i], &vn[i]);
-                    printf("face[%d]: %d\n", i, face[i]);
+                    // printf("face[%d]: %d\n", i, face[i]);
                     i++;
                 }
                 face_t mesh_face = {

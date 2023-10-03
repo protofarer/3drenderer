@@ -13,6 +13,12 @@ build:
 run: $(EXECUTABLE)
 	./$(EXECUTABLE)
 
+run-f22: $(EXECUTABLE)
+	./$(EXECUTABLE) assets/f22.obj
+
+run-cube: $(EXECUTABLE)
+	./$(EXECUTABLE) assets/cube.obj
+
 kill:
 	pkill --signal=9 $(EXECUTABLE)
 
