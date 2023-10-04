@@ -51,7 +51,7 @@ void render_color_buffer(void) {
     SDL_RenderCopy(renderer, color_buffer_texture, NULL, NULL);
 }
 
-void clear_color_buffer(uint32_t color) {
+void clear_color_buffer(color_t color) {
     for (int y = 0; y < window_height; y++) {
         for (int x = 0; x < window_width; x++) {
             color_buffer[window_width * y + x] = color;
@@ -59,7 +59,7 @@ void clear_color_buffer(uint32_t color) {
     }
 }
 
-void draw_grid(uint32_t interval, uint32_t color) {
+void draw_grid(uint32_t interval, color_t color) {
     for (int y = 0; y < window_height; y++) {
         for (int x = 0; x < window_width; x++) {
             if (y % interval == 0 || x % interval == 0)
@@ -69,7 +69,7 @@ void draw_grid(uint32_t interval, uint32_t color) {
 }
 
 // TODO this is broken, fix ratio calculation
-void draw_gradient_to_black_background(uint32_t color) {
+void draw_gradient_to_black_background(color_t color) {
     uint8_t original_red = (color & 0x00FF0000) >> 16;
     uint8_t original_green = (color & 0x0000FF00) >> 8;
     uint8_t original_blue = (color & 0x000000FF);
@@ -95,12 +95,12 @@ void draw_gradient_to_black_background(uint32_t color) {
     }
 }
 
-void draw_pixel(int x, int y, uint32_t color) {
+void draw_pixel(int x, int y, color_t color) {
     if (x >= 0 && x < window_width && y >= 0 && y < window_height)
         color_buffer[window_width * y + x] = color;
 }
 
-void draw_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t color) {
+void draw_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t height, color_t color) {
     printf("draw rect, x: %d y: %d\n", x, y);
     for (int i = y; i <= y + height; i++) {
         for (int j = x; j <= x + width; j++) {
@@ -113,7 +113,7 @@ void draw_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t
     printf("end draw rect\n");
 }
 
-void draw_fill_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t color) {
+void draw_fill_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t height, color_t color) {
     for (int i = y; i <= y + height; i++) {
         for (int j = x; j <= x + width; j++) {
             draw_pixel(j, i, color);
@@ -122,7 +122,7 @@ void draw_fill_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t height, uin
 }
 
 // naive DDA line algorithm
-void draw_line(int x0, int y0, int x1, int y1, uint32_t color) {
+void draw_line(int x0, int y0, int x1, int y1, color_t color) {
     int x_len = (x1 - x0);
     int y_len = (y1 - y0);
 
@@ -140,7 +140,7 @@ void draw_line(int x0, int y0, int x1, int y1, uint32_t color) {
     }
 }
 
-void draw_triangle(int x0, int y0, int x1, int y1, int x2, int y2, uint32_t color) {
+void draw_triangle(int x0, int y0, int x1, int y1, int x2, int y2, color_t color) {
     draw_line(x0, y0, x1, y1, color);
     draw_line(x1, y1, x2, y2, color);
     draw_line(x2, y2, x0, y0, color);

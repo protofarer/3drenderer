@@ -13,7 +13,7 @@ void fill_flat_bottom_triangle(
 	int x0, int y0, 
 	int x1, int y1, 
 	int xm, int ym, 
-	uint32_t color
+	color_t color
 ) {
 	float inv_slope_0_1 = (float)(x0 - x1) / (y0 - y1);
 	float inv_slope_0_m = (float)(xm - x0) / (ym - y0);
@@ -31,7 +31,7 @@ void fill_flat_top_triangle(
 	int x1, int y1, 
 	int x2, int y2, 
 	int xm, int ym, 
-	uint32_t color
+	color_t color
 ) {
 	float inv_slope_1_0 = (float)(x2 - x1) / (y2 - y1);
 	float inv_slope_0_m = (float)(x2 - xm) / (y2 - ym);
@@ -45,7 +45,7 @@ void fill_flat_top_triangle(
 	}
 }
 
-void draw_filled_triangle(int x0, int y0, int x1, int y1, int x2, int y2, uint32_t color) {
+void draw_filled_triangle(int x0, int y0, int x1, int y1, int x2, int y2, color_t color) {
 	// y0 > y1 > y2
 	if (y0 > y1) {
 		swap(&y0, &y1);
