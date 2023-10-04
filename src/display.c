@@ -126,14 +126,14 @@ void draw_line(int x0, int y0, int x1, int y1, uint32_t color) {
     int x_len = (x1 - x0);
     int y_len = (y1 - y0);
 
-    int side_length = abs(x_len) >= abs(y_len) ? abs(x_len) : abs(y_len);
+    int longer_side_length = abs(x_len) >= abs(y_len) ? abs(x_len) : abs(y_len);
 
-    float dx = x_len / (float)side_length;
-    float dy = y_len / (float)side_length;
+    float dx = x_len / (float)longer_side_length;
+    float dy = y_len / (float)longer_side_length;
 
     float x = x0;
     float y = y0;
-    for (int i = 0; i <= side_length; i++) {
+    for (int i = 0; i <= longer_side_length; i++) {
         draw_pixel(round(x), round(y), color);
         x += dx;
         y += dy;

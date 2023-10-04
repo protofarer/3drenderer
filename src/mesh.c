@@ -99,7 +99,7 @@ void load_obj_file_data(char* filepath) {
 
             // parse vertex line
             if (strcmp(token,"v") == 0) {
-                float vertices[3] = { 0.0f }; // stack allocate and initialize
+                float vertices[3]; // stack allocate and initialize
                 int i = 0;
                 while (token != NULL) {
                     token = strtok(NULL, " "); // read until space
@@ -121,9 +121,9 @@ void load_obj_file_data(char* filepath) {
 
             // parse face line
             if (strcmp(token, "f") == 0) {
-                int face[3] = { 0 };
-                int vt[3] = { 0 };
-                int vn[3] = { 0 };
+                int face[3];
+                int vt[3];
+                int vn[3];
                 int i = 0;
                 while (token != NULL) {
                     token = strtok(NULL, " "); // read until space
@@ -154,3 +154,35 @@ void load_obj_file_data(char* filepath) {
     fclose(file);
 }
 
+// void load_obj_file_data(char* filename) {
+//     FILE* file;
+//     file = fopen(filename, "r");
+//     char line[1024];
+
+//     while (fgets(line, 1024, file)) {
+//         // Vertex information
+//         if (strncmp(line, "v ", 2) == 0) {
+//             vec3_t vertex;
+//             sscanf(line, "v %f %f %f", &vertex.x, &vertex.y, &vertex.z);
+//             array_push(mesh.vertices, vertex);
+//         }
+//         // Face information
+//         if (strncmp(line, "f ", 2) == 0) {
+//             int vertex_indices[3];
+//             int texture_indices[3];
+//             int normal_indices[3];
+//             sscanf(
+//                 line, "f %d/%d/%d %d/%d/%d %d/%d/%d",
+//                 &vertex_indices[0], &texture_indices[0], &normal_indices[0], 
+//                 &vertex_indices[1], &texture_indices[1], &normal_indices[1], 
+//                 &vertex_indices[2], &texture_indices[2], &normal_indices[2]
+//             ); 
+//             face_t face = {
+//                 .a = vertex_indices[0],
+//                 .b = vertex_indices[1],
+//                 .c = vertex_indices[2]
+//             };
+//             array_push(mesh.faces, face);
+//         }
+//     }
+// }

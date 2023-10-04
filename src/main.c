@@ -20,6 +20,14 @@
 #define BLUE_GREEN 0xFF00FFFF
 #define PURPLE 0xFFFF00FF
 
+#define CAMERA_Z_OFFSET 5
+
+#define RENDER_MODE_WIREFRAME_VERTICES 1
+#define RENDER_MODE_WIREFRAME_FILL 2
+#define RENDER_MODE_WIREFRAME 3
+#define RENDER_MODE_FILL 4
+#define RENDER_MODE_OFF 0
+
 ////////////////////////////////////////////////////////////////////////////////
 // Array of triangles to be rendered
 ////////////////////////////////////////////////////////////////////////////////
@@ -33,6 +41,8 @@ vec3_t camera_position = { .x = 0, .y = 0, .z = 0 };
 float fov_factor = 640;
 
 bool is_running = false;
+bool is_backface_culling = true;
+int render_mode = RENDER_MODE_WIREFRAME_FILL;
 int previous_frame_time = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -66,6 +76,20 @@ void process_input(void) {
 		case SDL_KEYDOWN:
 			if (event.key.keysym.sym == SDLK_ESCAPE || event.key.keysym.sym == SDLK_e) {
 				is_running = false;
+			} else if (event.key.keysym.sym == SDLK_c) {
+				is_backface_culling = true;
+			} else if (event.key.keysym.sym == SDLK_d) {
+				is_backface_culling = false;
+			} else if (event.key.keysym.sym == SDLK_1) {
+				render_mode = RENDER_MODE_WIREFRAME_VERTICES;
+			} else if (event.key.keysym.sym == SDLK_2) {
+				render_mode = RENDER_MODE_WIREFRAME_FILL;
+			} else if (event.key.keysym.sym == SDLK_3) {
+				render_mode = RENDER_MODE_WIREFRAME;
+			} else if (event.key.keysym.sym == SDLK_4) {
+				render_mode = RENDER_MODE_FILL;
+			} else if (event.key.keysym.sym == SDLK_0) {
+				render_mode = RENDER_MODE_OFF;
 			}
 			break;
 	}
@@ -91,9 +115,9 @@ void update(void) {
 	// Init array of triangles to render
 	triangles_to_render = NULL;
 
-	mesh.rotation.y += .01;
-	mesh.rotation.z += .0;
-	mesh.rotation.x += .01;
+	mesh.rotation.y += .05;
+	mesh.rotation.z += .05;
+	mesh.rotation.x += .05;
 
 	// loop triangle faces of mesh
 	int num_faces = array_length(mesh.faces);
@@ -115,38 +139,40 @@ void update(void) {
 			transformed_vertex = vec3_rotate_z(transformed_vertex, mesh.rotation.z);
 
 			// Translate vertex away from camera
-			transformed_vertex.z += 5;
+			transformed_vertex.z += CAMERA_Z_OFFSET;
 
 			// Store for use outside of loop
 			transformed_vertices[j] = transformed_vertex;
 		}
 
-		// Cull back-faces
-		vec3_t vector_a = transformed_vertices[0];
-		vec3_t vector_b = transformed_vertices[1];
-		vec3_t vector_c = transformed_vertices[2];
+		// CULL BACKFACES
+		if (is_backface_culling) {
+			vec3_t vector_a = transformed_vertices[0];
+			vec3_t vector_b = transformed_vertices[1];
+			vec3_t vector_c = transformed_vertices[2];
 
-		vec3_t vector_ab = vec3_sub(vector_b, vector_a);
-		vec3_t vector_ac = vec3_sub(vector_c, vector_a);
-		vec3_normalize(&vector_ab);
-		vec3_normalize(&vector_ac);
+			vec3_t vector_ab = vec3_sub(vector_b, vector_a);
+			vec3_t vector_ac = vec3_sub(vector_c, vector_a);
+			vec3_normalize(&vector_ab);
+			vec3_normalize(&vector_ac);
 
-		// Left-handed coordinate system: take clockwise cross
-		// Compute face normal: cross b-a x c-a
-		vec3_t normal = vec3_cross(vector_ab, vector_ac);
-		vec3_normalize(&normal);
+			// Left-handed coordinate system: take clockwise cross
+			// Compute face normal: cross b-a x c-a
+			vec3_t normal = vec3_cross(vector_ab, vector_ac);
+			vec3_normalize(&normal);
 
-		// Find vector from a point on triangle to camera position
-		vec3_t camera_ray = vec3_sub(camera_position, normal);
+			// Find vector from a point on triangle to camera position
+			vec3_t camera_ray = vec3_sub(camera_position, normal);
 
-		// Calculate how aligned camera ray is with face normal: 
-		// 	dot product camera ray with face normal
-		float dot_normal_camera = vec3_dot(camera_ray, vector_a);
+			// Calculate how aligned camera ray is with face normal: 
+			// 	dot product camera ray with face normal
+			float dot_normal_camera = vec3_dot(camera_ray, vector_a);
 
-		// Bypass faces that are away from camera
-		if (dot_normal_camera < 0) continue;
+			// Bypass/cull faces that are away from camera
+			if (dot_normal_camera < 0) continue;
+		}
 
-		// Project each point
+		// PROJECT each point
 		triangle_t projected_triangle;
 		for (int j = 0; j < 3; j++) {
 			// Project current vertex
@@ -165,6 +191,10 @@ void update(void) {
 	}
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// RENDER
+////////////////////////////////////////////////////////////////////////////////
 void render(void) {
 	draw_grid(BACKGROUND_GRID_INTERVAL, LIGHT_TEAL);
 
@@ -182,12 +212,29 @@ void render(void) {
 
 		// printf("x:%d y:%d", x1, y1);
 		// printf("before draw rect");
-		// fill_rect(x1, y1, 3, 3, RED);
-		// fill_rect(x2, y2, 3, 3, RED);
-		// fill_rect(x3, y3, 3, 3, RED);
 
-		draw_triangle(x1,y1,x2,y2,x3,y3, RED_ORANGE);
+		if (render_mode == RENDER_MODE_WIREFRAME_VERTICES) {
+			draw_triangle(x1,y1,x2,y2,x3,y3, GREEN);
+			fill_rect(x1, y1, 3, 3, RED);
+			fill_rect(x2, y2, 3, 3, RED);
+			fill_rect(x3, y3, 3, 3, RED);
+		} else if (render_mode == RENDER_MODE_WIREFRAME) {
+			draw_triangle(x1,y1,x2,y2,x3,y3, GREEN);
+		} else if (render_mode == RENDER_MODE_FILL) {
+			draw_filled_triangle(x1,y1,x2,y2,x3,y3, RED_ORANGE);
+		} else if (render_mode == RENDER_MODE_WIREFRAME_FILL) {
+			draw_filled_triangle(x1,y1,x2,y2,x3,y3, RED_ORANGE);
+			draw_triangle(x1,y1,x2,y2,x3,y3, GREEN);
+		}
 	}
+	
+	// draw_filled_triangle(300+400, 100, 50 + 400, 400, 500 + 400, 700, 0xFFFF00FF);
+	// draw_triangle(300, 100, 50, 400, 500, 700, 0xFFFF00FF);
+	// flat top
+	// draw_filled_triangle(800, 300, 900, 300, 850, 400, 0xFFFF00FF);
+	// flat bottom
+	// draw_filled_triangle(1000, 500, 1100, 500, 1050, 400, 0xFFFF00FF);
+
 	array_free(triangles_to_render);
 
 	render_color_buffer();

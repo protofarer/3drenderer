@@ -37,13 +37,13 @@ vec2_t vec2_div(vec2_t v, float factor) {
 	return result;
 }
 float vec2_dot(vec2_t a, vec2_t b) {
-	return a.x * b.x + a.y * b.y;
+	return (a.x * b.x) + (a.y * b.y);
 }
 
 void vec2_normalize(vec2_t* v) {
 	float length = sqrt(v->x * v->x + v->y * v->y);
-	v->x = v->x / length;
-	v->y = v->y / length;
+	v->x /= length;
+	v->y /= length;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -87,21 +87,21 @@ vec3_t vec3_div(vec3_t v, float factor) {
 }
 vec3_t vec3_cross(vec3_t a, vec3_t b) {
 	vec3_t result = {
-		.x = a.y * b.z - a.z * b.y,
-		.y = a.z * b.x - a.x * b.z,
-		.z = a.x * b.y - a.y * b.x
+		.x = (a.y * b.z) - (a.z * b.y),
+		.y = (a.z * b.x) - (a.x * b.z),
+		.z = (a.x * b.y) - (a.y * b.x)
 	};
 	return result;
 }
 float vec3_dot(vec3_t a, vec3_t b) {
-	return a.x * b.x + a.y * b.y + a.z * b.z;
+	return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
 }
 
 void vec3_normalize(vec3_t* v) {
 	float length = sqrt(v->x * v->x + v->y * v->y + v->z * v->z);
-	v->x = v->x / length;
-	v->y = v->y / length;
-	v->z = v->z / length;
+	v->x /= length;
+	v->y /= length;
+	v->z /= length;
 }
 
 vec3_t vec3_normal(vec3_t a, vec3_t b) {
@@ -113,7 +113,6 @@ vec3_t vec3_normal(vec3_t a, vec3_t b) {
 		.z = cross.z / magnitude
 	};
 	return normal;
-
 }
 
 vec3_t vec3_rotate_x(vec3_t v, float angle) {
