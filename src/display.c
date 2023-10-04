@@ -113,7 +113,7 @@ void draw_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t
     printf("end draw rect\n");
 }
 
-void fill_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t color) {
+void draw_fill_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t color) {
     for (int i = y; i <= y + height; i++) {
         for (int j = x; j <= x + width; j++) {
             draw_pixel(j, i, color);

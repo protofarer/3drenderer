@@ -19,14 +19,22 @@
 #define BLUE 0xFF0000FF
 #define BLUE_GREEN 0xFF00FFFF
 #define PURPLE 0xFFFF00FF
+#define PINK 0xFFFFC0CB
 
 #define CAMERA_Z_OFFSET 5
 
-#define RENDER_MODE_WIREFRAME_VERTICES 1
-#define RENDER_MODE_WIREFRAME_FILL 2
-#define RENDER_MODE_WIREFRAME 3
-#define RENDER_MODE_FILL 4
-#define RENDER_MODE_OFF 0
+enum cull_method {
+	CULL_NONE,
+	CULL_BACKFACE
+} cull_method;
+
+enum render_method {
+	RENDER_WIRE,
+	RENDER_WIRE_VERTEX,
+	RENDER_FILL_TRIANGLE,
+	RENDER_FILL_TRIANGLE_WIRE,
+	RENDER_NONE
+} render_method;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Array of triangles to be rendered
@@ -41,14 +49,15 @@ vec3_t camera_position = { .x = 0, .y = 0, .z = 0 };
 float fov_factor = 640;
 
 bool is_running = false;
-bool is_backface_culling = true;
-int render_mode = RENDER_MODE_WIREFRAME_FILL;
 int previous_frame_time = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Initialize vars and objects
 ////////////////////////////////////////////////////////////////////////////////
 void setup(char* object_path) {
+	cull_method = CULL_BACKFACE;
+	render_method = RENDER_WIRE_VERTEX;
+
 	// Allocate required memory in bytes to hold color buffer
 	color_buffer = (uint32_t*)malloc(sizeof(uint32_t) * window_width * window_height);
 
@@ -68,7 +77,6 @@ void setup(char* object_path) {
 void process_input(void) {
 	SDL_Event event;
 	SDL_PollEvent(&event);
-
 	switch (event.type) {
 		case SDL_QUIT:
 			is_running = false;
@@ -76,20 +84,27 @@ void process_input(void) {
 		case SDL_KEYDOWN:
 			if (event.key.keysym.sym == SDLK_ESCAPE || event.key.keysym.sym == SDLK_e) {
 				is_running = false;
-			} else if (event.key.keysym.sym == SDLK_c) {
-				is_backface_culling = true;
-			} else if (event.key.keysym.sym == SDLK_d) {
-				is_backface_culling = false;
-			} else if (event.key.keysym.sym == SDLK_1) {
-				render_mode = RENDER_MODE_WIREFRAME_VERTICES;
-			} else if (event.key.keysym.sym == SDLK_2) {
-				render_mode = RENDER_MODE_WIREFRAME_FILL;
-			} else if (event.key.keysym.sym == SDLK_3) {
-				render_mode = RENDER_MODE_WIREFRAME;
-			} else if (event.key.keysym.sym == SDLK_4) {
-				render_mode = RENDER_MODE_FILL;
-			} else if (event.key.keysym.sym == SDLK_0) {
-				render_mode = RENDER_MODE_OFF;
+			}
+			if (event.key.keysym.sym == SDLK_c) {
+				cull_method = true;
+			} 
+			if (event.key.keysym.sym == SDLK_d) {
+				cull_method = false;
+			} 
+			if (event.key.keysym.sym == SDLK_1) {
+				render_method = RENDER_WIRE_VERTEX;
+			} 
+			if (event.key.keysym.sym == SDLK_2) {
+				render_method = RENDER_FILL_TRIANGLE_WIRE;
+			} 
+			if (event.key.keysym.sym == SDLK_3) {
+				render_method = RENDER_WIRE;
+			} 
+			if (event.key.keysym.sym == SDLK_4) {
+				render_method = RENDER_FILL_TRIANGLE;
+			} 
+			if (event.key.keysym.sym == SDLK_0) {
+				render_method = RENDER_NONE;
 			}
 			break;
 	}
@@ -105,6 +120,7 @@ vec2_t project(vec3_t point) {
 }
 
 void update(void) {
+	process_input();
 	int time_to_wait = FRAME_TARGET_TIME - (SDL_GetTicks() - previous_frame_time);
 	if (time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
 		SDL_Delay(time_to_wait);
@@ -146,7 +162,7 @@ void update(void) {
 		}
 
 		// CULL BACKFACES
-		if (is_backface_culling) {
+		if (cull_method == CULL_BACKFACE) {
 			vec3_t vector_a = transformed_vertices[0];
 			vec3_t vector_b = transformed_vertices[1];
 			vec3_t vector_c = transformed_vertices[2];
@@ -213,18 +229,25 @@ void render(void) {
 		// printf("x:%d y:%d", x1, y1);
 		// printf("before draw rect");
 
-		if (render_mode == RENDER_MODE_WIREFRAME_VERTICES) {
+		if (
+			render_method == RENDER_WIRE_VERTEX || 
+			render_method == RENDER_WIRE || 
+			render_method == RENDER_FILL_TRIANGLE_WIRE
+		) {
 			draw_triangle(x1,y1,x2,y2,x3,y3, GREEN);
-			fill_rect(x1, y1, 3, 3, RED);
-			fill_rect(x2, y2, 3, 3, RED);
-			fill_rect(x3, y3, 3, 3, RED);
-		} else if (render_mode == RENDER_MODE_WIREFRAME) {
-			draw_triangle(x1,y1,x2,y2,x3,y3, GREEN);
-		} else if (render_mode == RENDER_MODE_FILL) {
+		} 
+
+		if (
+			render_method == RENDER_FILL_TRIANGLE || 
+			render_method == RENDER_FILL_TRIANGLE_WIRE
+		) {
 			draw_filled_triangle(x1,y1,x2,y2,x3,y3, RED_ORANGE);
-		} else if (render_mode == RENDER_MODE_WIREFRAME_FILL) {
-			draw_filled_triangle(x1,y1,x2,y2,x3,y3, RED_ORANGE);
-			draw_triangle(x1,y1,x2,y2,x3,y3, GREEN);
+		}
+
+		if (render_method == RENDER_WIRE_VERTEX) {
+			draw_rect(x1 - 3, y1 - 3, 6, 6, PINK);
+			draw_rect(x2 - 3, y2 - 3, 6, 6, PINK);
+			draw_rect(x3 - 3, y3 - 3, 6, 6, PINK);
 		}
 	}
 	
@@ -262,7 +285,6 @@ int main(int argc, char* argv[]) {
 	setup(object_path);
 
 	while (is_running) {
-		process_input();
 		update();
 		render();
 	}
