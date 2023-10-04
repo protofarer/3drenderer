@@ -2,15 +2,18 @@
 
 #include <stdint.h>  // new types: the t in "uint32_t"
 #include "vector.h"
+#include "display.h"
 
 typedef struct {
 	int a;
 	int b;
 	int c;
+	color_t color;
 } face_t;
 
 typedef struct {
 	vec2_t points[3];
+	color_t color;
 } triangle_t;
 
 

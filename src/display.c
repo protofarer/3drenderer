@@ -101,7 +101,6 @@ void draw_pixel(int x, int y, color_t color) {
 }
 
 void draw_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t height, color_t color) {
-    printf("draw rect, x: %d y: %d\n", x, y);
     for (int i = y; i <= y + height; i++) {
         for (int j = x; j <= x + width; j++) {
             if ((i == y || i == y + height) && (j >= x && j <= x + width))
@@ -110,7 +109,6 @@ void draw_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t height, color_t 
                 color_buffer[window_width * i + j] = color;
         }
     }
-    printf("end draw rect\n");
 }
 
 void draw_fill_rect(uint32_t x, uint32_t y, uint32_t width, uint32_t height, color_t color) {

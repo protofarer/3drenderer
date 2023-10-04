@@ -9,18 +9,6 @@
 #include "mesh.h"
 #include "array.h"
 
-#define BACKGROUND_GRID_INTERVAL 25
-#define RED 0xFFFF0000
-#define RED_ORANGE 0xFFFF5500
-#define YELLOW 0xFFFFFF00
-#define GREEN 0xFF00FF00
-#define LIGHT_TEAL 0xFF004422
-#define TEAL 0xFF00FFCC
-#define BLUE 0xFF0000FF
-#define BLUE_GREEN 0xFF00FFFF
-#define PURPLE 0xFFFF00FF
-#define PINK 0xFFFFC0CB
-
 #define CAMERA_Z_OFFSET 5
 
 enum cull_method {
@@ -55,8 +43,9 @@ int previous_frame_time = 0;
 // Initialize vars and objects
 ////////////////////////////////////////////////////////////////////////////////
 void setup(char* object_path) {
+	is_running = initialize_window();
 	cull_method = CULL_BACKFACE;
-	render_method = RENDER_WIRE_VERTEX;
+	render_method = RENDER_FILL_TRIANGLE_WIRE;
 
 	// Allocate required memory in bytes to hold color buffer
 	color_buffer = (uint32_t*)malloc(sizeof(uint32_t) * window_width * window_height);
@@ -70,8 +59,8 @@ void setup(char* object_path) {
 		window_height
 	);
 
-	// load_cube_mesh_data(); // defined locally
-	load_obj_file_data(object_path);
+	load_cube_mesh_data(); // defined locally
+	// load_obj_file_data(object_path);
 }
 
 void process_input(void) {
@@ -189,17 +178,23 @@ void update(void) {
 		}
 
 		// PROJECT each point
-		triangle_t projected_triangle;
+		vec2_t projected_points[3];
 		for (int j = 0; j < 3; j++) {
 			// Project current vertex
-			vec2_t projected_point = project(transformed_vertices[j]);
+			projected_points[j] = project(transformed_vertices[j]);
 
 			// Scale and translate projected points to middle of screen (instead of doing it in update)
-			projected_point.x += (window_width / 2);
-			projected_point.y += (window_height / 2);
-
-			projected_triangle.points[j] = projected_point;
+			projected_points[j].x += (window_width / 2);
+			projected_points[j].y += (window_height / 2);
 		}
+		triangle_t projected_triangle = {
+			.points = {
+				{ projected_points[0].x , projected_points[0].y},
+				{ projected_points[1].x , projected_points[1].y},
+				{ projected_points[2].x , projected_points[2].y}
+			},
+			.color = mesh_face.color
+		};
 
 		// Save projected triangle in array of triangles to render
 		// triangles_to_render[i] = projected_triangle;
@@ -241,7 +236,7 @@ void render(void) {
 			render_method == RENDER_FILL_TRIANGLE || 
 			render_method == RENDER_FILL_TRIANGLE_WIRE
 		) {
-			draw_filled_triangle(x1,y1,x2,y2,x3,y3, RED_ORANGE);
+			draw_filled_triangle(x1,y1,x2,y2,x3,y3, triangle.color);
 		}
 
 		if (render_method == RENDER_WIRE_VERTEX) {
@@ -281,7 +276,6 @@ int main(int argc, char* argv[]) {
 	} else {
 		object_path = "./assets/cube.obj";
 	}
-	is_running = initialize_window();
 	setup(object_path);
 
 	while (is_running) {
