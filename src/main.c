@@ -9,8 +9,10 @@
 #include "mesh.h"
 #include "array.h"
 #include "sort.h"
+#include "matrix.h"
 
 #define CAMERA_Z_OFFSET 5
+const float PI = 3.14159265;
 
 enum cull_method {
 	CULL_NONE,
@@ -46,7 +48,7 @@ int previous_frame_time = 0;
 void setup(char* object_path) {
 	is_running = initialize_window();
 	cull_method = CULL_BACKFACE;
-	render_method = RENDER_FILL_TRIANGLE_WIRE;
+	render_method = RENDER_WIRE_VERTEX;
 
 	// Allocate required memory in bytes to hold color buffer
 	color_buffer = (uint32_t*)malloc(sizeof(uint32_t) * window_width * window_height);
@@ -60,8 +62,8 @@ void setup(char* object_path) {
 		window_height
 	);
 
-	// load_cube_mesh_data(); // defined locally
-	load_obj_file_data(object_path);
+	load_cube_mesh_data(); // defined locally
+	// load_obj_file_data(object_path);
 }
 
 void process_input(void) {
@@ -109,6 +111,11 @@ vec2_t project(vec3_t point) {
 	return projected_point;
 }
 
+float angle_total_sweep = 2 * PI;
+int period = 4000; // 4000ms
+int accum_t = 0.0; // accumulated ms up till period
+float period_proportion = 0.0; // position relative to period
+
 void update(void) {
 	process_input();
 	int time_to_wait = FRAME_TARGET_TIME - (SDL_GetTicks() - previous_frame_time);
@@ -121,9 +128,34 @@ void update(void) {
 	// Init array of triangles to render
 	triangles_to_render = NULL;
 
-	mesh.rotation.y += .05;
-	mesh.rotation.z += .05;
-	mesh.rotation.x += .05;
+	// todo: angle q that goes from 0 - 2pi over 4 seconds, to be used for setting transformation deltas
+	accum_t = (accum_t + FRAME_TARGET_TIME) % period;
+	period_proportion = (float)accum_t / period;
+
+	// mesh.scale.x += 0.001;
+	// mesh.scale.y += 0.001;
+	// mesh.scale.z += 0.001;
+	// mesh.scale.x = 1 + 0.5 * sin(angle_total_sweep * period_proportion*2);
+	// mesh.scale.y = 1 + 0.5 * sin(angle_total_sweep * period_proportion*2);
+	// mesh.scale.z = 1 + 0.5 * sin(angle_total_sweep * period_proportion*2);
+
+	// mesh.rotation.y += .05;
+	// mesh.rotation.z += .5;
+	// mesh.rotation.x += .05;
+
+	mesh.translation.x = 2 * sin(angle_total_sweep * period_proportion);
+	mesh.translation.y = 2 * cos(angle_total_sweep * period_proportion);
+
+	// Translate vertex away from camera
+	mesh.translation.z = CAMERA_Z_OFFSET;
+
+	mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
+
+	mat4_t rotation_matrix_x = mat4_make_rotation_x(mesh.rotation.x);
+	mat4_t rotation_matrix_y = mat4_make_rotation_y(mesh.rotation.y);
+	mat4_t rotation_matrix_z = mat4_make_rotation_z(mesh.rotation.z);
+
+	mat4_t translation_matrix = mat4_make_translation(mesh.translation.x, mesh.translation.y, mesh.translation.z);
 
 	// loop triangle faces of mesh
 	int num_faces = array_length(mesh.faces);
@@ -135,17 +167,29 @@ void update(void) {
 		face_vertices[1] = mesh.vertices[mesh_face.b - 1];
 		face_vertices[2] = mesh.vertices[mesh_face.c - 1];
 
-		vec3_t transformed_vertices[3];
+		vec4_t transformed_vertices[3];
 
 		// Loop all 3 vertices of current face and apply transformations
 		for (int j = 0; j < 3; j++) {
-			vec3_t transformed_vertex = face_vertices[j];
-			transformed_vertex = vec3_rotate_x(transformed_vertex, mesh.rotation.x);
-			transformed_vertex = vec3_rotate_y(transformed_vertex, mesh.rotation.y);
-			transformed_vertex = vec3_rotate_z(transformed_vertex, mesh.rotation.z);
+			vec4_t transformed_vertex = vec4_from_vec3(face_vertices[j]);
 
-			// Translate vertex away from camera
-			transformed_vertex.z += CAMERA_Z_OFFSET;
+			mat4_t world_matrix = mat4_identity();
+			world_matrix = mat4_mult_mat4(scale_matrix, world_matrix);
+			world_matrix = mat4_mult_mat4(rotation_matrix_x, world_matrix);
+			world_matrix = mat4_mult_mat4(rotation_matrix_y, world_matrix);
+			world_matrix = mat4_mult_mat4(rotation_matrix_z, world_matrix);
+			world_matrix = mat4_mult_mat4(translation_matrix, world_matrix);
+
+			// Multiply by scale matrix
+			transformed_vertex = mat4_mul_vec4(scale_matrix, transformed_vertex);
+
+			// Multiply by rotation matrices
+			transformed_vertex = mat4_mul_vec4(rotation_matrix_x, transformed_vertex);
+			transformed_vertex = mat4_mul_vec4(rotation_matrix_y, transformed_vertex);
+			transformed_vertex = mat4_mul_vec4(rotation_matrix_z, transformed_vertex);
+
+			// Multiply by translation matrix
+			transformed_vertex = mat4_mul_vec4(translation_matrix, transformed_vertex);
 
 			// Store for use outside of loop
 			transformed_vertices[j] = transformed_vertex;
@@ -153,9 +197,9 @@ void update(void) {
 
 		// CULL BACKFACES
 		if (cull_method == CULL_BACKFACE) {
-			vec3_t vector_a = transformed_vertices[0];
-			vec3_t vector_b = transformed_vertices[1];
-			vec3_t vector_c = transformed_vertices[2];
+			vec3_t vector_a = vec3_from_vec4(transformed_vertices[0]);
+			vec3_t vector_b = vec3_from_vec4(transformed_vertices[1]);
+			vec3_t vector_c = vec3_from_vec4(transformed_vertices[2]);
 
 			vec3_t vector_ab = vec3_sub(vector_b, vector_a);
 			vec3_t vector_ac = vec3_sub(vector_c, vector_a);
@@ -182,7 +226,7 @@ void update(void) {
 		vec2_t projected_points[3];
 		for (int j = 0; j < 3; j++) {
 			// Project current vertex
-			projected_points[j] = project(transformed_vertices[j]);
+			projected_points[j] = project(vec3_from_vec4(transformed_vertices[j]));
 
 			// Scale and translate projected points to middle of screen (instead of doing it in update)
 			projected_points[j].x += (window_width / 2);
