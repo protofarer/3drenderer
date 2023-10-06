@@ -8,6 +8,7 @@
 #include "triangle.h"
 #include "mesh.h"
 #include "array.h"
+#include "sort.h"
 
 #define CAMERA_Z_OFFSET 5
 
@@ -59,8 +60,8 @@ void setup(char* object_path) {
 		window_height
 	);
 
-	load_cube_mesh_data(); // defined locally
-	// load_obj_file_data(object_path);
+	// load_cube_mesh_data(); // defined locally
+	load_obj_file_data(object_path);
 }
 
 void process_input(void) {
@@ -187,19 +188,29 @@ void update(void) {
 			projected_points[j].x += (window_width / 2);
 			projected_points[j].y += (window_height / 2);
 		}
+
+		float avg_depth = (transformed_vertices[0].z + 
+			transformed_vertices[1].z + transformed_vertices[2].z) / 3;
+		
 		triangle_t projected_triangle = {
 			.points = {
 				{ projected_points[0].x , projected_points[0].y},
 				{ projected_points[1].x , projected_points[1].y},
 				{ projected_points[2].x , projected_points[2].y}
 			},
-			.color = mesh_face.color
+			.color = mesh_face.color,
+			.avg_depth = avg_depth
 		};
 
 		// Save projected triangle in array of triangles to render
 		// triangles_to_render[i] = projected_triangle;
 		array_push(triangles_to_render, projected_triangle);
 	}
+
+	// Painter's Algorithm: Sort triangles to render by avg_depth (hacky render ordering)
+	// ? quicksort it
+	// bubblesort(triangles_to_render);
+	mergesort_triangle(triangles_to_render, 0, array_length(triangles_to_render) - 1);
 }
 
 
