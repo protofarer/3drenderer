@@ -115,6 +115,12 @@ vec3_t vec3_normal(vec3_t a, vec3_t b) {
 	return normal;
 }
 
+void vec3_invert(vec3_t* v) {
+	v->x = -v->x;
+	v->y = -v->y;
+	v->z = -v->z;
+}
+
 vec3_t vec3_rotate_x(vec3_t v, float angle) {
 	vec3_t rotated_vector = {
 		.x = v.x,

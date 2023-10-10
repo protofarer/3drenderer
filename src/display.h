@@ -30,6 +30,7 @@ extern int window_width;
 extern int window_height;
 extern uint32_t* color_buffer;
 extern SDL_Texture* color_buffer_texture;
+extern int fov;
 
 bool initialize_window(void);
 void render_color_buffer(void);

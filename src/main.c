@@ -10,9 +10,11 @@
 #include "array.h"
 #include "sort.h"
 #include "matrix.h"
+#include "light.h"
 
-#define CAMERA_Z_OFFSET 5
-const float PI = 3.14159265;
+#define M_PI 3.14159265358979323846
+
+#define CAMERA_Z_OFFSET 10
 
 enum cull_method {
 	CULL_NONE,
@@ -35,12 +37,11 @@ triangle_t* triangles_to_render = NULL;
 ////////////////////////////////////////////////////////////////////////////////
 // Global var for exec status and game loop
 ////////////////////////////////////////////////////////////////////////////////
-vec3_t camera_position = { .x = 0, .y = 0, .z = 0 };
-
-float fov_factor = 640;
-
 bool is_running = false;
 int previous_frame_time = 0;
+
+vec3_t camera_position = { .x = 0, .y = 0, .z = 0 };
+mat4_t proj_matrix;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Initialize vars and objects
@@ -48,7 +49,7 @@ int previous_frame_time = 0;
 void setup(char* object_path) {
 	is_running = initialize_window();
 	cull_method = CULL_BACKFACE;
-	render_method = RENDER_WIRE_VERTEX;
+	render_method = RENDER_FILL_TRIANGLE;
 
 	// Allocate required memory in bytes to hold color buffer
 	color_buffer = (uint32_t*)malloc(sizeof(uint32_t) * window_width * window_height);
@@ -62,8 +63,16 @@ void setup(char* object_path) {
 		window_height
 	);
 
-	load_cube_mesh_data(); // defined locally
+	// Initialize perspective projection matrix
+	float fov = M_PI / 3; // 60 deg in radians
+	float aspect = (float)window_height / (float)window_width;
+	float znear = 0.1;
+	float zfar = 100.0;
+	proj_matrix = mat4_make_perspective(fov, aspect, znear, zfar);
+
 	// load_obj_file_data(object_path);
+	load_obj_file_data("./assets/f22.obj");
+	// load_cube_mesh_data(); // defined locally
 }
 
 void process_input(void) {
@@ -103,15 +112,16 @@ void process_input(void) {
 }
 
 // Function that receives a 3D vector and returns a projected 2D point
-vec2_t project(vec3_t point) {
-	vec2_t projected_point = {
-		.x = (fov_factor * point.x) / point.z,
-		.y = (fov_factor * point.y) / point.z
-	};
-	return projected_point;
-}
+// vec2_t project(vec3_t point) {
+// 	vec2_t projected_point = {
+// 		.x = (fov_factor * point.x) / point.z,
+// 		.y = (fov_factor * point.y) / point.z
+// 	};
+// 	return projected_point;
+// }
 
-float angle_total_sweep = 2 * PI;
+// animation params
+float angle_total_sweep = 2 * M_PI;
 int period = 4000; // 4000ms
 int accum_t = 0.0; // accumulated ms up till period
 float period_proportion = 0.0; // position relative to period
@@ -129,22 +139,23 @@ void update(void) {
 	triangles_to_render = NULL;
 
 	// todo: angle q that goes from 0 - 2pi over 4 seconds, to be used for setting transformation deltas
-	accum_t = (accum_t + FRAME_TARGET_TIME) % period;
-	period_proportion = (float)accum_t / period;
+	// accum_t = (accum_t + FRAME_TARGET_TIME) % period;
+	// period_proportion = (float)accum_t / period;
 
-	// mesh.scale.x += 0.001;
+	// mesh.scale.x += 0.01;
 	// mesh.scale.y += 0.001;
 	// mesh.scale.z += 0.001;
+
 	// mesh.scale.x = 1 + 0.5 * sin(angle_total_sweep * period_proportion*2);
 	// mesh.scale.y = 1 + 0.5 * sin(angle_total_sweep * period_proportion*2);
 	// mesh.scale.z = 1 + 0.5 * sin(angle_total_sweep * period_proportion*2);
 
 	// mesh.rotation.y += .05;
-	// mesh.rotation.z += .5;
+	// mesh.rotation.z += .05;
 	// mesh.rotation.x += .05;
 
-	mesh.translation.x = 2 * sin(angle_total_sweep * period_proportion);
-	mesh.translation.y = 2 * cos(angle_total_sweep * period_proportion);
+	// mesh.translation.x = 2 * sin(angle_total_sweep * period_proportion);
+	// mesh.translation.y = 2 * cos(angle_total_sweep * period_proportion);
 
 	// Translate vertex away from camera
 	mesh.translation.z = CAMERA_Z_OFFSET;
@@ -195,54 +206,75 @@ void update(void) {
 			transformed_vertices[j] = transformed_vertex;
 		}
 
+		vec3_t vector_a = vec3_from_vec4(transformed_vertices[0]);
+		vec3_t vector_b = vec3_from_vec4(transformed_vertices[1]);
+		vec3_t vector_c = vec3_from_vec4(transformed_vertices[2]);
+
+		vec3_t vector_ab = vec3_sub(vector_b, vector_a);
+		vec3_t vector_ac = vec3_sub(vector_c, vector_a);
+		vec3_normalize(&vector_ab);
+		vec3_normalize(&vector_ac);
+
+		// Left-handed coordinate system: take clockwise cross
+		// Compute face normal: cross b-a x c-a
+		vec3_t normal = vec3_cross(vector_ab, vector_ac);
+		vec3_normalize(&normal);
+
+		// Find vector from a point on triangle to camera position
+		vec3_t camera_ray = vec3_sub(camera_position, normal);
+
+		// Calculate how aligned camera ray is with face normal: 
+		// 	dot product camera ray with face normal
+		float dot_normal_camera = vec3_dot(camera_ray, vector_a);
+
 		// CULL BACKFACES
 		if (cull_method == CULL_BACKFACE) {
-			vec3_t vector_a = vec3_from_vec4(transformed_vertices[0]);
-			vec3_t vector_b = vec3_from_vec4(transformed_vertices[1]);
-			vec3_t vector_c = vec3_from_vec4(transformed_vertices[2]);
-
-			vec3_t vector_ab = vec3_sub(vector_b, vector_a);
-			vec3_t vector_ac = vec3_sub(vector_c, vector_a);
-			vec3_normalize(&vector_ab);
-			vec3_normalize(&vector_ac);
-
-			// Left-handed coordinate system: take clockwise cross
-			// Compute face normal: cross b-a x c-a
-			vec3_t normal = vec3_cross(vector_ab, vector_ac);
-			vec3_normalize(&normal);
-
-			// Find vector from a point on triangle to camera position
-			vec3_t camera_ray = vec3_sub(camera_position, normal);
-
-			// Calculate how aligned camera ray is with face normal: 
-			// 	dot product camera ray with face normal
-			float dot_normal_camera = vec3_dot(camera_ray, vector_a);
-
 			// Bypass/cull faces that are away from camera
 			if (dot_normal_camera < 0) continue;
 		}
 
 		// PROJECT each point
-		vec2_t projected_points[3];
+		vec4_t projected_points[3];
 		for (int j = 0; j < 3; j++) {
 			// Project current vertex
-			projected_points[j] = project(vec3_from_vec4(transformed_vertices[j]));
+			// projected_points[j] = project(vec3_from_vec4(transformed_vertices[j]));
+			projected_points[j] = mat4_mul_vec4_project(proj_matrix, transformed_vertices[j]);
 
-			// Scale and translate projected points to middle of screen (instead of doing it in update)
-			projected_points[j].x += (window_width / 2);
-			projected_points[j].y += (window_height / 2);
+			// Invert y values since window y-coordinate axis is inverted compared to obj file y-axis
+
+			projected_points[j].y *= -1;
+
+			// Scale into view
+			projected_points[j].x *= (window_width / 2.0);
+			projected_points[j].y *= (window_height / 2.0);
+
+			//Translate projected points to middle of screen
+			projected_points[j].x += (window_width / 2.0);
+			projected_points[j].y += (window_height / 2.0);
+
 		}
 
+		// Calc average depth of each face based on transformed vertices
 		float avg_depth = (transformed_vertices[0].z + 
 			transformed_vertices[1].z + transformed_vertices[2].z) / 3;
-		
+
+		//////////////////////////////////////////////////////////////////////////
+		// Infinite direction lighting
+		//////////////////////////////////////////////////////////////////////////
+
+		// Calc shade intensity based on how aligned is the normal to the inverse of the light
+		float light_intensity_factor = -vec3_dot(normal, light.direction);
+
+		color_t triangle_color = mesh_face.color;
+		triangle_color = light_apply_intensity(triangle_color, light_intensity_factor);
+
 		triangle_t projected_triangle = {
 			.points = {
 				{ projected_points[0].x , projected_points[0].y},
 				{ projected_points[1].x , projected_points[1].y},
 				{ projected_points[2].x , projected_points[2].y}
 			},
-			.color = mesh_face.color,
+			.color = triangle_color,
 			.avg_depth = avg_depth
 		};
 

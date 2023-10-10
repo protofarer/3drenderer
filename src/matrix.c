@@ -1,5 +1,6 @@
 #include "matrix.h"
 #include <math.h>
+#include "display.h"
 
 mat4_t mat4_identity(void) {
 	// | 1 0 0 0 |
@@ -102,4 +103,31 @@ mat4_t mat4_mult_mat4(mat4_t a, mat4_t b) {
 		}
 	}
 	return m;
+}
+
+// projection (aka perspective divide) operation happens after this, see comment below
+mat4_t mat4_make_perspective(float fov, float aspect, float znear, float zfar) {
+	float fov_factor = 1 / tan(fov / 2);
+	float lambda = zfar / (zfar - znear);
+	mat4_t m = {{{ 0 }}};
+	m.m[0][0] = aspect * fov_factor;
+	m.m[1][1] = fov_factor;
+	m.m[2][2] = lambda;
+	// m.m[2][3] = -(zfar * znear) / (zfar - znear);
+	m.m[2][3] = -znear * lambda;
+	m.m[3][2] = 1.0; // saves the z value of object to be used later in projection operation
+	return m;
+}
+
+vec4_t mat4_mul_vec4_project(mat4_t mat_proj, vec4_t v) {
+	// mult projection matrix by original vector
+	vec4_t result = mat4_mul_vec4(mat_proj, v);
+
+	// perspective divide with original z-value, now stored in w
+	if (result.w != 0.0) {
+		result.x /= result.w;
+		result.y /= result.w;
+		result.z /= result.w;
+	}
+	return result;
 }

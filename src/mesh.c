@@ -26,23 +26,23 @@ vec3_t cube_vertices[N_CUBE_VERTICES] = {
 
 face_t cube_faces[N_CUBE_FACES] = {
     // front
-    { .a = 1, .b = 2, .c = 3, .color = PURPLE },
-    { .a = 1, .b = 3, .c = 4, .color = PURPLE },
+    { .a = 1, .b = 2, .c = 3, .color = WHITE },
+    { .a = 1, .b = 3, .c = 4, .color = WHITE },
     // right
-    { .a = 4, .b = 3, .c = 5, .color = GREEN },
-    { .a = 4, .b = 5, .c = 6, .color = GREEN },
+    { .a = 4, .b = 3, .c = 5, .color = WHITE },
+    { .a = 4, .b = 5, .c = 6, .color = WHITE },
     // back
-    { .a = 6, .b = 5, .c = 7, .color = BLUE },
-    { .a = 6, .b = 7, .c = 8, .color = BLUE },
+    { .a = 6, .b = 5, .c = 7, .color = WHITE },
+    { .a = 6, .b = 7, .c = 8, .color = WHITE },
     // left
-    { .a = 8, .b = 7, .c = 2, .color = YELLOW },
-    { .a = 8, .b = 2, .c = 1, .color = YELLOW },
+    { .a = 8, .b = 7, .c = 2, .color = WHITE },
+    { .a = 8, .b = 2, .c = 1, .color = WHITE },
     // top
-    { .a = 2, .b = 7, .c = 5, .color = RED },
-    { .a = 2, .b = 5, .c = 3, .color = RED },
+    { .a = 2, .b = 7, .c = 5, .color = WHITE },
+    { .a = 2, .b = 5, .c = 3, .color = WHITE },
     // bottom
-    { .a = 6, .b = 8, .c = 1, .color = ORANGE },
-    { .a = 6, .b = 1, .c = 4, .color = ORANGE }
+    { .a = 6, .b = 8, .c = 1, .color = WHITE },
+    { .a = 6, .b = 1, .c = 4, .color = WHITE }
 };
 
 void load_cube_mesh_data(void) {
@@ -115,7 +115,7 @@ void load_obj_file_data(char* filepath) {
                 }
                 vec3_t vec3_vertices = {
                     .x = vertices[0],
-                    .y = vertices[1],
+                    .y = vertices[1], // NB: obj file specifies positive y from bottom-to-top, instead of top-to-bottom in window coords
                     .z = vertices[2],
                 };
                 array_push(mesh.vertices, vec3_vertices);
@@ -137,10 +137,12 @@ void load_obj_file_data(char* filepath) {
                     // printf("face[%d]: %d\n", i, face[i]);
                     i++;
                 }
+                // ! hard code color into face
                 face_t mesh_face = {
                     .a = face[0],
                     .b = face[1],
-                    .c = face[2]
+                    .c = face[2],
+                    .color = 0XFFFFFFFF
                 };
                 array_push(mesh.faces, mesh_face);
                 continue;
