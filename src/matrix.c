@@ -107,6 +107,8 @@ mat4_t mat4_mult_mat4(mat4_t a, mat4_t b) {
 
 // projection (aka perspective divide) operation happens after this, see comment below
 mat4_t mat4_make_perspective(float fov, float aspect, float znear, float zfar) {
+	// ? CSDR inverting fov_factor to account for different axis signs between window and obj file
+	// ? this should flip both x and y points here instead of during projection transform
 	float fov_factor = 1 / tan(fov / 2);
 	float lambda = zfar / (zfar - znear);
 	mat4_t m = {{{ 0 }}};

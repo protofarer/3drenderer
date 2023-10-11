@@ -1,5 +1,5 @@
 CC := gcc
-CC_FLAGS := -Wall
+CC_FLAGS := -Wall -Wno-comment
 LANG_STD = -std=c99
 # INCLUDE_PATH := -I"./libs"
 SRCS := src/*.c

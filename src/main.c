@@ -5,12 +5,13 @@
 
 #include "display.h"
 #include "vector.h"
-#include "triangle.h"
 #include "mesh.h"
 #include "array.h"
 #include "sort.h"
 #include "matrix.h"
 #include "light.h"
+#include "triangle.h"
+#include "texture.h"
 
 #define M_PI 3.14159265358979323846
 
@@ -26,6 +27,8 @@ enum render_method {
 	RENDER_WIRE_VERTEX,
 	RENDER_FILL_TRIANGLE,
 	RENDER_FILL_TRIANGLE_WIRE,
+	RENDER_TEXTURED,
+	RENDER_TEXTURED_WIRE,
 	RENDER_NONE
 } render_method;
 
@@ -49,7 +52,7 @@ mat4_t proj_matrix;
 void setup(char* object_path) {
 	is_running = initialize_window();
 	cull_method = CULL_BACKFACE;
-	render_method = RENDER_FILL_TRIANGLE;
+	render_method = RENDER_TEXTURED;
 
 	// Allocate required memory in bytes to hold color buffer
 	color_buffer = (uint32_t*)malloc(sizeof(uint32_t) * window_width * window_height);
@@ -70,9 +73,14 @@ void setup(char* object_path) {
 	float zfar = 100.0;
 	proj_matrix = mat4_make_perspective(fov, aspect, znear, zfar);
 
+	// Manually load hardcoded texture data from the static array
+	mesh_texture = (uint32_t*)REDBRICK_TEXTURE;
+	texture_width = 64;
+	texture_height = 64;
+
 	// load_obj_file_data(object_path);
-	load_obj_file_data("./assets/f22.obj");
-	// load_cube_mesh_data(); // defined locally
+	// load_obj_file_data("./assets/f22.obj");
+	load_cube_mesh_data(); // defined locally
 }
 
 void process_input(void) {
@@ -103,6 +111,12 @@ void process_input(void) {
 			} 
 			if (event.key.keysym.sym == SDLK_4) {
 				render_method = RENDER_FILL_TRIANGLE;
+			} 
+			if (event.key.keysym.sym == SDLK_5) {
+				render_method = RENDER_TEXTURED;
+			} 
+			if (event.key.keysym.sym == SDLK_6) {
+				render_method = RENDER_TEXTURED_WIRE;
 			} 
 			if (event.key.keysym.sym == SDLK_0) {
 				render_method = RENDER_NONE;
@@ -150,9 +164,9 @@ void update(void) {
 	// mesh.scale.y = 1 + 0.5 * sin(angle_total_sweep * period_proportion*2);
 	// mesh.scale.z = 1 + 0.5 * sin(angle_total_sweep * period_proportion*2);
 
-	// mesh.rotation.y += .05;
-	// mesh.rotation.z += .05;
-	// mesh.rotation.x += .05;
+	mesh.rotation.y += .05;
+	mesh.rotation.z += .05;
+	mesh.rotation.x += .05;
 
 	// mesh.translation.x = 2 * sin(angle_total_sweep * period_proportion);
 	// mesh.translation.y = 2 * cos(angle_total_sweep * period_proportion);
@@ -272,7 +286,12 @@ void update(void) {
 			.points = {
 				{ projected_points[0].x , projected_points[0].y},
 				{ projected_points[1].x , projected_points[1].y},
-				{ projected_points[2].x , projected_points[2].y}
+				{ projected_points[2].x , projected_points[2].y},
+			},
+			.texcoords = {
+				{ mesh_face.a_uv.u, mesh_face.a_uv.v }, 
+				{ mesh_face.b_uv.u, mesh_face.b_uv.v }, 
+				{ mesh_face.c_uv.u, mesh_face.c_uv.v },
 			},
 			.color = triangle_color,
 			.avg_depth = avg_depth
@@ -308,13 +327,26 @@ void render(void) {
 		int x3 = triangle.points[2].x;
 		int y3 = triangle.points[2].y;
 
-		// printf("x:%d y:%d", x1, y1);
-		// printf("before draw rect");
+		tex2_t uva = triangle.texcoords[0];
+		tex2_t uvb = triangle.texcoords[1];
+		tex2_t uvc = triangle.texcoords[2];
 
+		// Draw texture triangle
+		if (render_method == RENDER_TEXTURED || render_method == RENDER_TEXTURED_WIRE) {
+			draw_textured_triangle(
+				x1,y1, uva.u, uva.v,
+				x2,y2, uvb.u, uvb.v,
+				x3,y3, uvc.u, uvc.v,
+				mesh_texture
+			);
+		}
+
+		// Draw wires
 		if (
 			render_method == RENDER_WIRE_VERTEX || 
 			render_method == RENDER_WIRE || 
-			render_method == RENDER_FILL_TRIANGLE_WIRE
+			render_method == RENDER_FILL_TRIANGLE_WIRE ||
+			render_method == RENDER_TEXTURED_WIRE
 		) {
 			draw_triangle(x1,y1,x2,y2,x3,y3, GREEN);
 		} 
