@@ -164,9 +164,9 @@ void update(void) {
 	// mesh.scale.y = 1 + 0.5 * sin(angle_total_sweep * period_proportion*2);
 	// mesh.scale.z = 1 + 0.5 * sin(angle_total_sweep * period_proportion*2);
 
-	mesh.rotation.y += .05;
-	mesh.rotation.z += .05;
-	mesh.rotation.x += .05;
+	// mesh.rotation.x += .05;
+	// mesh.rotation.y += .05;
+	// mesh.rotation.z += .05;
 
 	// mesh.translation.x = 2 * sin(angle_total_sweep * period_proportion);
 	// mesh.translation.y = 2 * cos(angle_total_sweep * period_proportion);
@@ -284,9 +284,9 @@ void update(void) {
 
 		triangle_t projected_triangle = {
 			.points = {
-				{ projected_points[0].x , projected_points[0].y},
-				{ projected_points[1].x , projected_points[1].y},
-				{ projected_points[2].x , projected_points[2].y},
+				{ projected_points[0].x , projected_points[0].y, projected_points[0].z, projected_points[0].w},
+				{ projected_points[1].x , projected_points[1].y, projected_points[1].z, projected_points[1].w},
+				{ projected_points[2].x , projected_points[2].y, projected_points[2].z, projected_points[2].w},
 			},
 			.texcoords = {
 				{ mesh_face.a_uv.u, mesh_face.a_uv.v }, 
@@ -322,21 +322,29 @@ void render(void) {
 
 		int x1 = triangle.points[0].x;
 		int y1 = triangle.points[0].y;
+		float z1 = triangle.points[0].z;
+		float w1 = triangle.points[0].w;
+
 		int x2 = triangle.points[1].x;
 		int y2 = triangle.points[1].y;
+		float z2 = triangle.points[1].z;
+		float w2 = triangle.points[1].w;
+
 		int x3 = triangle.points[2].x;
 		int y3 = triangle.points[2].y;
+		float z3 = triangle.points[2].z;
+		float w3 = triangle.points[2].w;
 
 		tex2_t uva = triangle.texcoords[0];
 		tex2_t uvb = triangle.texcoords[1];
 		tex2_t uvc = triangle.texcoords[2];
 
-		// Draw texture triangle
+		// Draw textured triangle
 		if (render_method == RENDER_TEXTURED || render_method == RENDER_TEXTURED_WIRE) {
 			draw_textured_triangle(
-				x1,y1, uva.u, uva.v,
-				x2,y2, uvb.u, uvb.v,
-				x3,y3, uvc.u, uvc.v,
+				x1, y1, z1, w1, uva.u, uva.v,
+				x2, y2, z2, w2, uvb.u, uvb.v,
+				x3, y3, z3, w3, uvc.u, uvc.v,
 				mesh_texture
 			);
 		}
