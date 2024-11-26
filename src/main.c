@@ -164,9 +164,9 @@ void update(void) {
 	// mesh.scale.y = 1 + 0.5 * sin(angle_total_sweep * period_proportion*2);
 	// mesh.scale.z = 1 + 0.5 * sin(angle_total_sweep * period_proportion*2);
 
-	// mesh.rotation.x += .05;
-	// mesh.rotation.y += .05;
-	// mesh.rotation.z += .05;
+	mesh.rotation.x += .025;
+	mesh.rotation.y += .025;
+	/* mesh.rotation.z += .05; */
 
 	// mesh.translation.x = 2 * sin(angle_total_sweep * period_proportion);
 	// mesh.translation.y = 2 * cos(angle_total_sweep * period_proportion);
@@ -319,32 +319,25 @@ void render(void) {
 	int num_triangles = array_length(triangles_to_render);
 	for (int i = 0; i < num_triangles; i++) {
 		triangle_t triangle = triangles_to_render[i];
+		
+		int x[3], y[3];
+		float z[3], w[3];
+		tex2_t uv[3];
 
-		int x1 = triangle.points[0].x;
-		int y1 = triangle.points[0].y;
-		float z1 = triangle.points[0].z;
-		float w1 = triangle.points[0].w;
-
-		int x2 = triangle.points[1].x;
-		int y2 = triangle.points[1].y;
-		float z2 = triangle.points[1].z;
-		float w2 = triangle.points[1].w;
-
-		int x3 = triangle.points[2].x;
-		int y3 = triangle.points[2].y;
-		float z3 = triangle.points[2].z;
-		float w3 = triangle.points[2].w;
-
-		tex2_t uva = triangle.texcoords[0];
-		tex2_t uvb = triangle.texcoords[1];
-		tex2_t uvc = triangle.texcoords[2];
+		for (int j = 0; j < 3; j++) {
+			x[j] = triangle.points[j].x;
+			y[j] = triangle.points[j].y;
+			z[j] = triangle.points[j].z;
+			w[j] = triangle.points[j].w;
+			uv[j] = triangle.texcoords[j];
+		}
 
 		// Draw textured triangle
 		if (render_method == RENDER_TEXTURED || render_method == RENDER_TEXTURED_WIRE) {
 			draw_textured_triangle(
-				x1, y1, z1, w1, uva.u, uva.v,
-				x2, y2, z2, w2, uvb.u, uvb.v,
-				x3, y3, z3, w3, uvc.u, uvc.v,
+				x[0], y[0], z[0], w[0], uv[0].u, uv[0].v,
+				x[1], y[1], z[1], w[1], uv[1].u, uv[1].v,
+				x[2], y[2], z[2], w[2], uv[2].u, uv[2].v,
 				mesh_texture
 			);
 		}
@@ -356,20 +349,20 @@ void render(void) {
 			render_method == RENDER_FILL_TRIANGLE_WIRE ||
 			render_method == RENDER_TEXTURED_WIRE
 		) {
-			draw_triangle(x1,y1,x2,y2,x3,y3, GREEN);
+			draw_triangle(x[0], y[0], x[1], y[1], x[2], y[2], GREEN);
 		} 
 
 		if (
 			render_method == RENDER_FILL_TRIANGLE || 
 			render_method == RENDER_FILL_TRIANGLE_WIRE
 		) {
-			draw_filled_triangle(x1,y1,x2,y2,x3,y3, triangle.color);
+			draw_filled_triangle(x[0],y[0],x[1],y[1],x[2],y[2], triangle.color);
 		}
 
 		if (render_method == RENDER_WIRE_VERTEX) {
-			draw_rect(x1 - 3, y1 - 3, 6, 6, PINK);
-			draw_rect(x2 - 3, y2 - 3, 6, 6, PINK);
-			draw_rect(x3 - 3, y3 - 3, 6, 6, PINK);
+			draw_rect(x[0] - 3, y[0] - 3, 6, 6, PINK);
+			draw_rect(x[1] - 3, y[1] - 3, 6, 6, PINK);
+			draw_rect(x[2] - 3, y[2] - 3, 6, 6, PINK);
 		}
 	}
 	
