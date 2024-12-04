@@ -168,7 +168,7 @@ void update(void) {
 	// mesh.scale.y = 1 + 0.5 * sin(angle_total_sweep * period_proportion*2);
 	// mesh.scale.z = 1 + 0.5 * sin(angle_total_sweep * period_proportion*2);
 
-	mesh.rotation.x += .025;
+	// mesh.rotation.x += .025;
 	mesh.rotation.y += .025;
 	/* mesh.rotation.z += .05; */
 

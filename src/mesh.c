@@ -1,9 +1,7 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include "mesh.h"
 #include "array.h"
-#include "display.h"
+#include "mesh.h"
 
 mesh_t mesh = {
     .vertices = NULL,
@@ -14,14 +12,14 @@ mesh_t mesh = {
 };
 
 vec3_t cube_vertices[N_CUBE_VERTICES] = {
-	{ .x = -1, .y = -1, .z = -1}, // 1
-	{ .x = -1, .y =  1, .z = -1},
-	{ .x =  1, .y =  1, .z = -1},
-	{ .x =  1, .y = -1, .z = -1}, // ...
-	{ .x =  1, .y =  1, .z =  1},
-	{ .x =  1, .y = -1, .z =  1},
-	{ .x = -1, .y =  1, .z =  1},
-	{ .x = -1, .y = -1, .z =  1}, // 8
+    { .x = -1, .y = -1, .z = -1 }, // 1
+    { .x = -1, .y =  1, .z = -1 }, // 2
+    { .x =  1, .y =  1, .z = -1 }, // 3
+    { .x =  1, .y = -1, .z = -1 }, // 4
+    { .x =  1, .y =  1, .z =  1 }, // 5
+    { .x =  1, .y = -1, .z =  1 }, // 6
+    { .x = -1, .y =  1, .z =  1 }, // 7
+    { .x = -1, .y = -1, .z =  1 }  // 8
 };
 
 face_t cube_faces[N_CUBE_FACES] = {
@@ -56,138 +54,47 @@ void load_cube_mesh_data(void) {
     }
 }
 
-// read vertex lines "v", read face lines "f"
-// read in point values into a vertex "index", push into dynamic array `vertices`
-// read in first slash values into a face row, push into dynamic array `faces`
-void load_obj_file_data(char* filepath) {
-    // read file from disk
-    FILE* file = fopen(filepath, "r");
-    if (file == NULL) return;
+void load_obj_file_data(char* filename) {
+    FILE* file;
+    file = fopen(filename, "r");
+    char line[1024];
 
-    // initial allocation
-    size_t buffer_size = 64;    // starting value based on cube file, can increase buffer as longer lines are encountered
-    char* line = malloc(buffer_size);
-    if (line == NULL) {     // catch malloc fail, unlikely
-        fclose(file);
-        printf("FAIL initial malloc");
-        return;
-    }
+    tex2_t* texcoords = NULL;
 
-    // open text file
-        int line_n = 0;
-    while (!feof(file)) {
-        if (fgets(line, buffer_size, file)) {
-            // read line by line and parse
-
-            // double buffer if buffer limit hit
-            if (line[buffer_size - 2] != '\0' && line[buffer_size - 2] != '\n') {
-                buffer_size *= 2;
-                char* new_line = realloc(line, buffer_size);
-                if (new_line == NULL) {
-                    free(line);
-                    fclose(file);
-                    printf("FAIL realloc increase buffer size");
-                    return;
-                }
-                line = new_line;
-            }
-
-            // PARSE
-
-            // get first token: returns ptr to 1st token string in line
-            char* token = strtok(line, " ");
-            if (token == NULL) continue;
-
-            // printf("----- line[%d] 1st token: \"%s\" -----\n", line_n, token);
-
-            // parse vertex line
-            if (strcmp(token,"v") == 0) {
-                float vertices[3]; // stack allocate and initialize
-                int i = 0;
-                while (token != NULL) {
-                    token = strtok(NULL, " "); // read until space
-                    if (token == NULL) break;
-                    // printf("%s\n", token);
-
-                    float vertex = atof(token);
-                    vertices[i] = vertex;
-                    i++;
-                }
-                vec3_t vec3_vertices = {
-                    .x = vertices[0],
-                    .y = vertices[1], // NB: obj file specifies positive y from bottom-to-top, instead of top-to-bottom in window coords
-                    .z = vertices[2],
-                };
-                array_push(mesh.vertices, vec3_vertices);
-                continue;
-            }
-
-            // parse face line
-            if (strcmp(token, "f") == 0) {
-                int face[3];
-                int vt[3];
-                int vn[3];
-                int i = 0;
-                while (token != NULL) {
-                    token = strtok(NULL, " "); // read until space
-                    if (token == NULL) break;
-
-                    // strtok is not re-entrant, do manual parsing via sscanf, it is also extensible to other values on the "f" line
-                    sscanf(token, "%d/%d/%d", &face[i], &vt[i], &vn[i]);
-                    // printf("face[%d]: %d\n", i, face[i]);
-                    i++;
-                }
-                // ! hard code color into face
-                face_t mesh_face = {
-                    .a = face[0],
-                    .b = face[1],
-                    .c = face[2],
-                    .color = 0XFFFFFFFF
-                };
-                array_push(mesh.faces, mesh_face);
-                continue;
-            }
+    while (fgets(line, 1024, file)) {
+        // Vertex information
+        if (strncmp(line, "v ", 2) == 0) {
+            vec3_t vertex;
+            sscanf(line, "v %f %f %f", &vertex.x, &vertex.y, &vertex.z);
+            array_push(mesh.vertices, vertex);
         }
-
-        line_n++;
+        // Texture coordinate information
+        if (strncmp(line, "vt ", 3) == 0) {
+            tex2_t texcoord;
+            sscanf(line, "vt %f %f", &texcoord.u, &texcoord.v);
+            array_push(texcoords, texcoord);
+        }
+        // Face information
+        if (strncmp(line, "f ", 2) == 0) {
+            int vertex_indices[3];
+            int texture_indices[3];
+            int normal_indices[3];
+            sscanf(
+                line, "f %d/%d/%d %d/%d/%d %d/%d/%d",
+                &vertex_indices[0], &texture_indices[0], &normal_indices[0],
+                &vertex_indices[1], &texture_indices[1], &normal_indices[1],
+                &vertex_indices[2], &texture_indices[2], &normal_indices[2]
+            );
+            face_t face = {
+                .a = vertex_indices[0],
+                .b = vertex_indices[1],
+                .c = vertex_indices[2],
+                .a_uv = texcoords[texture_indices[0] - 1],
+                .b_uv = texcoords[texture_indices[1] - 1],
+                .c_uv = texcoords[texture_indices[2] - 1],
+                .color = 0xFFFFFFFF
+            };
+            array_push(mesh.faces, face);
+        }
     }
-
-    // push appropriate line data to appropriate array (vertices or faces)
-
-    // free and close
-    free(line);
-    fclose(file);
 }
-
-// void load_obj_file_data(char* filename) {
-//     FILE* file;
-//     file = fopen(filename, "r");
-//     char line[1024];
-
-//     while (fgets(line, 1024, file)) {
-//         // Vertex information
-//         if (strncmp(line, "v ", 2) == 0) {
-//             vec3_t vertex;
-//             sscanf(line, "v %f %f %f", &vertex.x, &vertex.y, &vertex.z);
-//             array_push(mesh.vertices, vertex);
-//         }
-//         // Face information
-//         if (strncmp(line, "f ", 2) == 0) {
-//             int vertex_indices[3];
-//             int texture_indices[3];
-//             int normal_indices[3];
-//             sscanf(
-//                 line, "f %d/%d/%d %d/%d/%d %d/%d/%d",
-//                 &vertex_indices[0], &texture_indices[0], &normal_indices[0], 
-//                 &vertex_indices[1], &texture_indices[1], &normal_indices[1], 
-//                 &vertex_indices[2], &texture_indices[2], &normal_indices[2]
-//             ); 
-//             face_t face = {
-//                 .a = vertex_indices[0],
-//                 .b = vertex_indices[1],
-//                 .c = vertex_indices[2]
-//             };
-//             array_push(mesh.faces, face);
-//         }
-//     }
-// }
