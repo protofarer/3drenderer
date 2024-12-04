@@ -16,25 +16,25 @@
 //  (x1,y1)------(x2,y2)
 //
 ///////////////////////////////////////////////////////////////////////////////
-void fill_flat_bottom_triangle(
-	int x0, int y0, 
-	int x1, int y1, 
-	int x2, int y2, 
-	color_t color
-) {
-	// float inv_slope_0_1 = (float)(x0 - x1) / (y0 - y1);
-	// float inv_slope_0_m = (float)(xm - x0) / (ym - y0);
-	float inv_slope_0_1 = (float)(x1 - x0) / (y1 - y0);
-	float inv_slope_0_m = (float)(x2 - x0) / (y2 - y0);
-
-	float x_start = x0;
-	float x_end = x0;
-	for (int y = y0; y <= y2; y++) {
-		draw_line(x_start, y, x_end, y, color);
-		x_start += inv_slope_0_1;
-		x_end += inv_slope_0_m; 
-	}
-}
+// void fill_flat_bottom_triangle(
+// 	int x0, int y0, 
+// 	int x1, int y1, 
+// 	int x2, int y2, 
+// 	color_t color
+// ) {
+// 	// float inv_slope_0_1 = (float)(x0 - x1) / (y0 - y1);
+// 	// float inv_slope_0_m = (float)(xm - x0) / (ym - y0);
+// 	float inv_slope_0_1 = (float)(x1 - x0) / (y1 - y0);
+// 	float inv_slope_0_m = (float)(x2 - x0) / (y2 - y0);
+//
+// 	float x_start = x0;
+// 	float x_end = x0;
+// 	for (int y = y0; y <= y2; y++) {
+// 		draw_line(x_start, y, x_end, y, color);
+// 		x_start += inv_slope_0_1;
+// 		x_end += inv_slope_0_m; 
+// 	}
+// }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Draw a filled a triangle with a flat top
@@ -49,54 +49,160 @@ void fill_flat_bottom_triangle(
 //        (x2,y2)
 //
 ///////////////////////////////////////////////////////////////////////////////
-void fill_flat_top_triangle(
-	int x0, int y0, 
-	int x1, int y1, 
-	int x2, int y2, 
-	color_t color
-) {
-	float inv_slope_1_0 = (float)(x2 - x0) / (y2 - y0);
-	float inv_slope_0_m = (float)(x2 - x1) / (y2 - y1);
+// void fill_flat_top_triangle(
+// 	int x0, int y0, 
+// 	int x1, int y1, 
+// 	int x2, int y2, 
+// 	color_t color
+// ) {
+// 	float inv_slope_1_0 = (float)(x2 - x0) / (y2 - y0);
+// 	float inv_slope_0_m = (float)(x2 - x1) / (y2 - y1);
+//
+// 	float x_start = x2;
+// 	float x_end = x2;
+// 	for (int y = y2; y >= y0; y--) { // ? unsure if equal to needed since the top/bottom faces share a line that fill_flat already covers
+// 		draw_line(x_start, y, x_end, y, color);
+// 		x_start -= inv_slope_1_0;
+// 		x_end -= inv_slope_0_m; 
+// 	}
+// }
 
-	float x_start = x2;
-	float x_end = x2;
-	for (int y = y2; y >= y0; y--) { // ? unsure if equal to needed since the top/bottom faces share a line that fill_flat already covers
-		draw_line(x_start, y, x_end, y, color);
-		x_start -= inv_slope_1_0;
-		x_end -= inv_slope_0_m; 
+
+void draw_triangle_pixel(
+	int x, int y, 
+	color_t color,
+	vec4_t point_a, vec4_t point_b, vec4_t point_c
+) {
+	// float u0, float v0, float u1, float v1, float u2, float v2
+	vec2_t p = { x, y };
+	vec2_t a = vec2_from_vec4(point_a);
+	vec2_t b = vec2_from_vec4(point_b);
+	vec2_t c = vec2_from_vec4(point_c);
+
+	vec3_t weights = barycentric_weights(a, b, c, p);
+
+	float alpha = weights.x;
+	float beta = weights.y;
+	float gamma = weights.z;
+
+	// Variables to store the interpolated values of U, V, 1/w for current pixel
+	float interpolated_reciprocal_w;
+
+	// Also interpolate the value of 1/w for the current pixel
+	interpolated_reciprocal_w = (1 / point_a.w) * alpha + (1 / point_b.w) * beta + (1 / point_c.w) * gamma;
+
+	// Adjust 1/w so pixels that are closer to the camera have smaller values, futher have larger
+	interpolated_reciprocal_w = 1.0 - interpolated_reciprocal_w;
+
+	// Only draw the pixel if the depth value is less than the one previously stored in the z-buffer
+	if (z_buffer[(window_width * y) + x] > interpolated_reciprocal_w) {
+		// Draw a pixel at position (x,y) with the color that comes from the mapped texture
+		draw_pixel(x, y, color);
+
+		// Upate the z-buffer value with 1/w this pixel
+		z_buffer[(window_width * y) + x] = interpolated_reciprocal_w;
 	}
 }
 
-void draw_filled_triangle(int x0, int y0, int x1, int y1, int x2, int y2, color_t color) {
-	// y0 > y1 > y2
+void draw_filled_triangle(int x0, int y0, float w0, int x1, int y1, float w1, int x2, int y2, float w2, color_t color) {
+	// order coords by y-coord top->bottom 0->2 :: y0 < y1 < y2
 	if (y0 > y1) {
 		swap_int(&y0, &y1);
 		swap_int(&x0, &x1);
+		swap_float(&w0, &w1);
 	}
 	if (y1 > y2) {
 		swap_int(&y1, &y2);
 		swap_int(&x1, &x2);
+		swap_float(&w1, &w2);
 	}
 	if (y0 > y1) {
 		swap_int(&y0, &y1);
 		swap_int(&x0, &x1);
+		swap_float(&w0, &w1);
 	}
 
-	// if ((y2 - y0) == 0) return;	// ? does culling take care of this?
+	// Create vector points and texture coords after vertices sorted
+	vec4_t point_a = { x0, y0, 0, w0 };
+	vec4_t point_b = { x1, y1, 0, w1 };
+	vec4_t point_c = { x2, y2, 0, w2 };
 
-	if (y1 == y2) {
-		fill_flat_bottom_triangle(x0, y0, x1, y1, x2, y2, color);
-	} else if (y0 == y1) {
-		fill_flat_top_triangle(x0, y0, x1, y1, x2, y2, color);
-	} else {
-		// Calculate new vertex (Mx, My) using similar triangles
-		// int xm = (((float)(y1 - y0) * (x2 - x0)) / (float)(y2 - y0)) + x0;
-		int xm = (((y1 - y0) * (x2 - x0)) / (y2 - y0)) + x0;
-		int ym = y1;
+	///////////////////////////////////////////////////////////////////////////////
+	// Render upper half of triangle (flat-bottom)
+	///////////////////////////////////////////////////////////////////////////////
+	float inv_slope_1;
+	float inv_slope_2;
+	if (y1 - y0 != 0) inv_slope_1 = (float)(x1 - x0) / abs(y1 - y0);
+	if (y2 - y0 != 0) inv_slope_2 = (float)(x2 - x0) / abs(y2 - y0);
+	if (y1 - y0 != 0) {
+		for (int y = y0; y <= y1; y++) {
+			int x_start = x1 + (y - y1) * inv_slope_1;
+			int x_end = x0 + (y - y0) * inv_slope_2;
 
-		fill_flat_bottom_triangle(x0, y0, x1, y1, xm, ym, color);
-		fill_flat_top_triangle(x1, y1, xm, ym, x2, y2, color);
+			if (x_end < x_start) swap_int(&x_end, &x_start);
+
+			for (int x = x_start; x <= x_end; x++) { // x <= x_end or <, mine differs from lecture "viz textured triangles"
+				draw_triangle_pixel(
+					x, y, 
+					color,
+					point_a, point_b, point_c
+				);
+			}
+		}
 	}
+	///////////////////////////////////////////////////////////////////////////////
+	// Render lower half of triangle (flat-top)
+	///////////////////////////////////////////////////////////////////////////////
+	if (y2 - y1 != 0) inv_slope_1 = (float)(x2 - x1) / abs(y2 - y1);
+	if (y2 - y0 != 0) inv_slope_2 = (float)(x2 - x0) / abs(y2 - y0);
+	if (y2 - y1 != 0) {
+		for (int y = y1; y <= y2; y++) {
+			int x_start = x1 + (y - y1) * inv_slope_1;
+			int x_end = x0 + (y - y0) * inv_slope_2;
+
+			if (x_end < x_start) swap_int(&x_end, &x_start);
+
+			for (int x = x_start; x <= x_end; x++) {
+				draw_triangle_pixel(
+					x, y, 
+					color,
+					point_a, point_b, point_c
+				);
+			}
+		}
+	}
+
+
+	// BELOW REPLACED TO USE Z-BUFFER
+	// // y0 > y1 > y2
+	// if (y0 > y1) {
+	// 	swap_int(&y0, &y1);
+	// 	swap_int(&x0, &x1);
+	// }
+	// if (y1 > y2) {
+	// 	swap_int(&y1, &y2);
+	// 	swap_int(&x1, &x2);
+	// }
+	// if (y0 > y1) {
+	// 	swap_int(&y0, &y1);
+	// 	swap_int(&x0, &x1);
+	// }
+	//
+	// // if ((y2 - y0) == 0) return;	// ? does culling take care of this?
+	//
+	// if (y1 == y2) {
+	// 	fill_flat_bottom_triangle(x0, y0, x1, y1, x2, y2, color);
+	// } else if (y0 == y1) {
+	// 	fill_flat_top_triangle(x0, y0, x1, y1, x2, y2, color);
+	// } else {
+	// 	// Calculate new vertex (Mx, My) using similar triangles
+	// 	// int xm = (((float)(y1 - y0) * (x2 - x0)) / (float)(y2 - y0)) + x0;
+	// 	int xm = (((y1 - y0) * (x2 - x0)) / (y2 - y0)) + x0;
+	// 	int ym = y1;
+	//
+	// 	fill_flat_bottom_triangle(x0, y0, x1, y1, xm, ym, color);
+	// 	fill_flat_top_triangle(x1, y1, xm, ym, x2, y2, color);
+	// }
 }
 
 void texture_flat_bottom_triangle(
@@ -171,7 +277,17 @@ void draw_texel(
 	int tex_x = abs((int)(interpolated_u * texture_width)) % texture_width;
 	int tex_y = abs((int)(interpolated_v * texture_height)) % texture_height;
 
-	draw_pixel(x, y, texture[(texture_width * tex_y) + tex_x]);
+	// Adjust 1/w so pixels that are closer to the camera have smaller values, futher have larger
+	interpolated_reciprocal_w = 1.0 - interpolated_reciprocal_w;
+
+	// Only draw the pixel if the depth value is less than the one previously stored in the z-buffer
+	if (z_buffer[(window_width * y) + x] > interpolated_reciprocal_w) {
+		// Draw a pixel at position (x,y) with the color that comes from the mapped texture
+		draw_pixel(x, y, texture[(texture_width * tex_y) + tex_x]);
+
+		// Upate the z-buffer value with 1/w this pixel
+		z_buffer[(window_width * y) + x] = interpolated_reciprocal_w;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
