@@ -12,6 +12,7 @@
 #include "light.h"
 #include "triangle.h"
 #include "texture.h"
+#include "camera.h"
 
 #define M_PI 3.14159265358979323846
 
@@ -47,7 +48,13 @@ float delta_time = 0.0;
 int previous_frame_time = 0;
 
 vec3_t camera_position = { .x = 0, .y = 0, .z = 0 };
+
+///////////////////////////////////////////////////////////////////////////////
+// Declaration of our global transformation matrices
+///////////////////////////////////////////////////////////////////////////////
+mat4_t world_matrix;
 mat4_t proj_matrix;
+mat4_t view_matrix;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Initialize vars and objects
@@ -184,13 +191,17 @@ void update(void) {
 	// Translate vertex away from camera
 	mesh.translation.z = CAMERA_Z_OFFSET;
 
-	mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
+	// Create the view matrix looking at a hardcoded target point
+    vec3_t target = { 0, 0, 4.0 };
+    vec3_t up_direction = { 0, 1, 0 };
+    view_matrix = mat4_look_at(camera.position, target, up_direction);
 
+	mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
+	mat4_t translation_matrix = mat4_make_translation(mesh.translation.x, mesh.translation.y, mesh.translation.z);
 	mat4_t rotation_matrix_x = mat4_make_rotation_x(mesh.rotation.x);
 	mat4_t rotation_matrix_y = mat4_make_rotation_y(mesh.rotation.y);
 	mat4_t rotation_matrix_z = mat4_make_rotation_z(mesh.rotation.z);
 
-	mat4_t translation_matrix = mat4_make_translation(mesh.translation.x, mesh.translation.y, mesh.translation.z);
 
 	// loop triangle faces of mesh
 	int num_faces = array_length(mesh.faces);
@@ -210,11 +221,12 @@ void update(void) {
 
 			mat4_t world_matrix = mat4_identity();
 			world_matrix = mat4_mult_mat4(scale_matrix, world_matrix);
-			world_matrix = mat4_mult_mat4(rotation_matrix_x, world_matrix);
-			world_matrix = mat4_mult_mat4(rotation_matrix_y, world_matrix);
 			world_matrix = mat4_mult_mat4(rotation_matrix_z, world_matrix);
+			world_matrix = mat4_mult_mat4(rotation_matrix_y, world_matrix);
+			world_matrix = mat4_mult_mat4(rotation_matrix_x, world_matrix);
 			world_matrix = mat4_mult_mat4(translation_matrix, world_matrix);
 
+			///////////// OLD
 			// Multiply by scale matrix
 			transformed_vertex = mat4_mul_vec4(scale_matrix, transformed_vertex);
 
@@ -225,6 +237,11 @@ void update(void) {
 
 			// Multiply by translation matrix
 			transformed_vertex = mat4_mul_vec4(translation_matrix, transformed_vertex);
+			///////////////////////////////
+
+			//////////// NEW BUT BUG (instructor must have changed previous lessons' code that I'm unaware of)
+			// transformed_vertex = mat4_mul_vec4(world_matrix, transformed_vertex);
+			// transformed_vertex = mat4_mul_vec4(view_matrix, transformed_vertex);
 
 			// Store for use outside of loop
 			transformed_vertices[j] = transformed_vertex;
