@@ -43,6 +43,7 @@ int num_triangles_to_render = 0;
 // Global var for exec status and game loop
 ////////////////////////////////////////////////////////////////////////////////
 bool is_running = false;
+float delta_time = 0.0;
 int previous_frame_time = 0;
 
 vec3_t camera_position = { .x = 0, .y = 0, .z = 0 };
@@ -154,6 +155,8 @@ void update(void) {
 		SDL_Delay(time_to_wait);
 	}
 
+	delta_time = (SDL_GetTicks() - previous_frame_time) / 1000.0;
+
 	previous_frame_time = SDL_GetTicks();
 
 	// Initialize the counter of triangles to render for current rame
@@ -172,7 +175,7 @@ void update(void) {
 	// mesh.scale.z = 1 + 0.5 * sin(angle_total_sweep * period_proportion*2);
 
 	// mesh.rotation.x += .025;
-	mesh.rotation.y += .025;
+	mesh.rotation.y += 1.0 * delta_time;
 	/* mesh.rotation.z += .05; */
 
 	// mesh.translation.x = 2 * sin(angle_total_sweep * period_proportion);
