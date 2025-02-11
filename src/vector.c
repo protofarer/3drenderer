@@ -4,6 +4,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations of Vector 2D funcs
 ////////////////////////////////////////////////////////////////////////////////
+vec2_t vec2_new(float x, float y) {
+	vec2_t result = { x, y };
+	return result;
+}
+
 float vec2_length(vec2_t v) {
 	return sqrt(v.x * v.x + v.y * v.y);
 }
@@ -56,6 +61,16 @@ void vec2_normalize(vec2_t* v) {
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations of Vector 3D funcs
 ////////////////////////////////////////////////////////////////////////////////
+vec3_t vec3_new(float x, float y, float z) {
+	vec3_t result = { x, y, z };
+	return result;
+}
+
+vec3_t vec3_clone(vec3_t* vec) {
+	vec3_t vec_new = { vec->x, vec->y, vec->z };
+	return vec_new;
+}
+
 float vec3_length(vec3_t v) {
 	return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 }
