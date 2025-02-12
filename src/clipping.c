@@ -9,21 +9,23 @@
 
 plane_t frustrum_planes[NUM_PLANES];
 
-void init_frustrum_planes(float fov, float z_near, float z_far) {
-    float cos_theta = cos(fov / 2.0);
-    float sin_theta = sin(fov / 2.0);
+void init_frustrum_planes(float fov_x, float fov_y, float z_near, float z_far) {
+    float cos_theta_y = cos(fov_y / 2.0);
+    float sin_theta_y = sin(fov_y / 2.0);
+    float cos_theta_x = cos(fov_x / 2.0);
+    float sin_theta_x = sin(fov_x / 2.0);
 
     frustrum_planes[LEFT_FRUSTRUM_PLANE].point = vec3_new(0, 0, 0);
-    frustrum_planes[LEFT_FRUSTRUM_PLANE].normal = vec3_new(cos_theta, 0, sin_theta);
+    frustrum_planes[LEFT_FRUSTRUM_PLANE].normal = vec3_new(cos_theta_x, 0, sin_theta_x);
 
     frustrum_planes[RIGHT_FRUSTRUM_PLANE].point = vec3_new(0, 0, 0);
-    frustrum_planes[RIGHT_FRUSTRUM_PLANE].normal = vec3_new(-cos_theta, 0, sin_theta);
+    frustrum_planes[RIGHT_FRUSTRUM_PLANE].normal = vec3_new(-cos_theta_x, 0, sin_theta_x);
 
     frustrum_planes[TOP_FRUSTRUM_PLANE].point = vec3_new(0, 0, 0);
-    frustrum_planes[TOP_FRUSTRUM_PLANE].normal = vec3_new(0, -cos_theta, sin_theta);
+    frustrum_planes[TOP_FRUSTRUM_PLANE].normal = vec3_new(0, -cos_theta_y, sin_theta_y);
 
     frustrum_planes[BOTTOM_FRUSTRUM_PLANE].point = vec3_new(0, 0, 0);
-    frustrum_planes[BOTTOM_FRUSTRUM_PLANE].normal = vec3_new(0, cos_theta, sin_theta);
+    frustrum_planes[BOTTOM_FRUSTRUM_PLANE].normal = vec3_new(0, cos_theta_y, sin_theta_y);
 
     frustrum_planes[NEAR_FRUSTRUM_PLANE].point = vec3_new(0, 0, z_near);
     frustrum_planes[NEAR_FRUSTRUM_PLANE].normal = vec3_new(0, 0, 1);

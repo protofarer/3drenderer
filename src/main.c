@@ -79,14 +79,16 @@ void setup(char* object_path) {
 	);
 
 	// Initialize perspective projection matrix
-	float fov = M_PI / 3; // 60 deg in radians
-	float aspect = (float)window_height / (float)window_width;
+	float aspect_x = (float)window_width / (float)window_height;
+	float aspect_y = (float)window_height / (float)window_width;
+	float fov_y = M_PI / 3; // 60 deg in radians
+	float fov_x = atan(tan(fov_y / 2) * aspect_x) * 2.0;
 	float z_near = 0.1;
 	float z_far = 100.0;
-	proj_matrix = mat4_make_perspective(fov, aspect, z_near, z_far);
+	proj_matrix = mat4_make_perspective(fov_y, aspect_y, z_near, z_far);
 
 	// Initialize frustrum planes with point and normal each
-	init_frustrum_planes(fov, z_near, z_far);
+	init_frustrum_planes(fov_x, fov_y, z_near, z_far);
 
 
 	// Manually load hardcoded texture data from the static array
@@ -96,13 +98,13 @@ void setup(char* object_path) {
 
 	// Loads the vertex and face values for the mesh data structure
 	// load_obj_file_data(object_path);
-	// load_obj_file_data("./assets/f117.obj");
-	load_obj_file_data("./assets/cube.obj");
+	load_obj_file_data("./assets/f117.obj");
+	// load_obj_file_data("./assets/cube.obj");
 	// load_cube_mesh_data(); // defined locally
 
 	// Load the texture information from an external PNG file
-	// load_png_texture_data("./assets/f117.png");
-	load_png_texture_data("./assets/cube.png");
+	load_png_texture_data("./assets/f117.png");
+	// load_png_texture_data("./assets/cube.png");
 }
 
 void process_input(void) {
