@@ -1,12 +1,17 @@
 #include "light.h"
 #include <stdint.h>  // new types: the t in "uint32_t"
-#include "display.h"
 
-light_t light = {
-	.direction = {0,0,1}
-};
+static light_t light;
 
-uint32_t light_apply_intensity(color_t triangle_color, float percentage_factor) {
+void init_light(vec3_t direction) {
+	light.direction = direction;
+}
+
+vec3_t get_light_direction(void) {
+	return light.direction;
+}
+
+uint32_t light_apply_intensity(uint32_t triangle_color, float percentage_factor) {
 	if (percentage_factor < 0 ) {
 		percentage_factor = 0;
 	} else if (percentage_factor > 1) {
