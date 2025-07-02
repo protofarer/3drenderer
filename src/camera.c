@@ -56,8 +56,8 @@ void rotate_camera_pitch(float angle) {
 }
 
 vec3_t get_camera_lookat_target(void) {
-	// Initialize target looking at pos z-axis
-	vec3_t target = { 0, 0, 1 };
+    // Initialize target looking at pos z-axis
+    vec3_t target = { 0, 0, 1 };
 
     mat4_t camera_yaw_rotation = mat4_make_rotation_y(get_camera_yaw());
     mat4_t camera_pitch_rotation = mat4_make_rotation_x(get_camera_pitch());

@@ -11,10 +11,10 @@
 plane_t frustrum_planes[NUM_PLANES];
 
 void init_frustrum_planes(float fov_x, float fov_y, float z_near, float z_far) {
-    float cos_theta_y = cos(fov_y / 2.0);
-    float sin_theta_y = sin(fov_y / 2.0);
     float cos_theta_x = cos(fov_x / 2.0);
     float sin_theta_x = sin(fov_x / 2.0);
+    float cos_theta_y = cos(fov_y / 2.0);
+    float sin_theta_y = sin(fov_y / 2.0);
 
     frustrum_planes[LEFT_FRUSTRUM_PLANE].point = vec3_new(0, 0, 0);
     frustrum_planes[LEFT_FRUSTRUM_PLANE].normal = vec3_new(cos_theta_x, 0, sin_theta_x);

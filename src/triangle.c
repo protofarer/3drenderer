@@ -2,6 +2,7 @@
 #include "triangle.h"
 #include "display.h"
 #include "swap.h"
+#include "upng.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // Draw a filled a triangle with a flat bottom
@@ -238,9 +239,9 @@ vec3_t barycentric_weights(vec2_t a, vec2_t b, vec2_t c, vec2_t p) {
 
 // Draw textured pixel at position x and y using interpolation
 
-void draw_texel(
+void draw_triangle_texel(
 	int x, int y, 
-	uint32_t* texture,
+	upng_t* texture,
 	vec4_t point_a, vec4_t point_b, vec4_t point_c, 
 	tex2_t a_uv, tex2_t b_uv, tex2_t c_uv
 ) {
@@ -273,6 +274,9 @@ void draw_texel(
 	interpolated_u /= interpolated_reciprocal_w;
 	interpolated_v /= interpolated_reciprocal_w;
 
+	int texture_width = upng_get_width(texture);
+	int texture_height = upng_get_height(texture);
+
 	// Map the UV coord to full texture width and height
 	int tex_x = abs((int)(interpolated_u * texture_width)) % texture_width;
 	int tex_y = abs((int)(interpolated_v * texture_height)) % texture_height;
@@ -282,8 +286,11 @@ void draw_texel(
 
 	// Only draw the pixel if the depth value is less than the one previously stored in the z-buffer
 	if (get_zbuffer_at(x, y) > interpolated_reciprocal_w) {
+		// Get the buffer of colors from the texture
+		uint32_t* texture_buffer = (uint32_t*)upng_get_buffer(texture);
+
 		// Draw a pixel at position (x,y) with the color that comes from the mapped texture
-		draw_pixel(x, y, texture[(texture_width * tex_y) + tex_x]);
+		draw_pixel(x, y, texture_buffer[(texture_width * tex_y) + tex_x]);
 
 		// Upate the z-buffer value with 1/w this pixel
 		update_zbuffer_at(x, y, interpolated_reciprocal_w);
@@ -317,7 +324,7 @@ void draw_textured_triangle(
 	int x0, int y0, float z0, float w0, float u0, float v0, 
 	int x1, int y1, float z1, float w1, float u1, float v1,
 	int x2, int y2, float z2, float w2, float u2, float v2, 
-	uint32_t* texture
+	upng_t* texture
 ) {
 	// order coords by y-coord top->bottom 0->2 :: y0 < y1 < y2
 	if (y0 > y1) {
@@ -374,7 +381,7 @@ void draw_textured_triangle(
 
 			for (int x = x_start; x <= x_end; x++) { // x <= x_end or <, mine differs from lecture "viz textured triangles"
 				// draw_pixel(x, y, (x % 4 == 0 && y % 4 == 0) ? BLUE : PURPLE);
-				draw_texel(
+				draw_triangle_texel(
 					x, y, 
 					texture,
 					point_a, point_b, point_c, 
@@ -397,7 +404,7 @@ void draw_textured_triangle(
 
 			for (int x = x_start; x <= x_end; x++) {
 				// draw_pixel(x, y, (x % 4 == 0 && y % 4 == 0) ? BLUE : PURPLE);
-				draw_texel(
+				draw_triangle_texel(
 					x, y, 
 					texture,
 					point_a, point_b, point_c, 

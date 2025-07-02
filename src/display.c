@@ -49,13 +49,13 @@ bool initialize_window(void) {
     window_width = fullscreen_width / 2;
     window_height = fullscreen_height / 2;
 
-    SDL_Window* window = SDL_CreateWindow(
+    window = SDL_CreateWindow(
         NULL,  // NULL for no window border (no title)
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         fullscreen_width,
         fullscreen_height,
-        SDL_WINDOW_SHOWN);
+        SDL_WINDOW_BORDERLESS);
     if (!window) {
         fprintf(stderr, "Error creating SDL window.\n");
         return false;

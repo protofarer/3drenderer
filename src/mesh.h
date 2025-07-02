@@ -2,32 +2,23 @@
 
 #include "vector.h"
 #include "triangle.h"
-
-#define N_CUBE_VERTICES 8
-#define N_CUBE_FACES (6 * 2) // 6 cube faces, 2 tri per face
-extern vec3_t cube_vertices[N_CUBE_VERTICES];
-extern face_t cube_faces[N_CUBE_FACES];
+#include "upng.h"
 
 /// ////////////////////////////////////////////////////////////////////////////
 // Dynamic size meshes
 /// ////////////////////////////////////////////////////////////////////////////
 typedef struct {
-	vec3_t* vertices; // dynamic array of vertices
+	vec3_t* vertices;	// dynamic array of vertices
 	face_t* faces;		// dynamic array of faces
+	upng_t* texture;	// mesh PNG texture pointer
 	vec3_t rotation;	// rotation with x, y, and z values
 	vec3_t scale;
 	vec3_t translation;
 } mesh_t;
 
-extern mesh_t mesh;   // the purpose of extern, which is to say "this is declared here, but defined elsewhere."
-
-void load_cube_mesh_data(void);
-
-void load_obj_file_data(char* filepath);
-
-
-// read vertex lines "v", read in point values into a vertex "index"
-// push into dynamic array `vertices`
-
-// read face lines "f", read in first slash values into a face row
-// push into dynamic array `faces`
+void load_mesh(char* obj_filename, char* png_filename, vec3_t scale, vec3_t translation, vec3_t rotation);
+void load_mesh_obj_data(mesh_t* mesh, char* obj_filename);
+void load_mesh_png_data(mesh_t* mesh, char* png_filename);
+int get_num_meshes(void);
+mesh_t* get_mesh(int index);
+void free_meshes(void);
